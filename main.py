@@ -1,22 +1,21 @@
-from tkinter import *
-from gui import Window
+from view.gui import Window
 import argparse
-from simulation import Simulation
+from controllers.simulation import Simulation
+from controllers.controller import Controller
 
 
 
 def parse_args():
     parser = argparse.ArgumentParser("Reinforcement Learning experiments for multiagent environments")
-
     parser.add_argument("--display", action="store_true", default=False)
+    args = parser.parse_args()
+    return args
 
 
 if __name__ == "__main__":
 
-    
-    root = Tk()
-    #size of the window
-    root.geometry("425x325")
+    args = parse_args()
+    c = Controller(args)
+    c.start()
 
-    app = Window(root)
-    root.mainloop()
+    # root.update()ˇ

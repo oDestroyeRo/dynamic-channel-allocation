@@ -1,15 +1,14 @@
 from tkinter import *
-from eventgen import CEvent, EventGen, ce_str
 import numpy as np
-import logging
+from models.eventgen import CEvent
 
 class Window(Frame):
-    def __init__(self, master=None):
+    def __init__(self, master, controller):
         Frame.__init__(self, master)
+        self.controller = controller
         self.master = master
         self.shape = Canvas(master)
         self.base_stations = np.zeros(shape=(7,7),dtype=int)
-        self.eventgen = EventGen(7,7,"uniform", 10, 3, 1, logging.getLogger(''))
         self.cevent = None
         self.init_window()
 
@@ -35,10 +34,12 @@ class Window(Frame):
             for j in range(0,7):
                 points = [x,y,x+20,y+13,x+20,y+40,x+0,y+53,x-20,y+40,x-20,y+13,x+0,y+0]
                 self.base_stations[i][j] = self.shape.create_polygon(points, outline="#476042", fill='gray', width=2)
+
                 self.shape.create_text(x ,y+10, text=str(i)+","+str(j))
                 x = x + 40
-                self.eventgen.event_new(0, (i, j), dt)
-                cevent = self.eventgen.pop()
+                # self.eventgen.event_new(0, (i, j), dt)
+                self.controller.event_new(0, (i, j), dt)
+                cevent = self.controller.pop_event()
                 if (cevent[1] == CEvent.NEW):
                     # print("NEW")
                     self.shape.itemconfig(self.base_stations[cevent[2][0]][cevent[2][1]], fill='red')

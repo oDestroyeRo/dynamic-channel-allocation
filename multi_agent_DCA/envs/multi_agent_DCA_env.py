@@ -39,7 +39,7 @@ class MultiAgentDCAEnv(gym.Env):
         # self.observation_space.append(spaces.Discrete(70))
         # agent.action.c = np.zeros(70)
         self.action_space = spaces.Discrete(self.channels)
-        self.observation_space = spaces.Box(low=0, high=1, shape=(self.row ,self.col, self.channels), dtype=np.uint8)
+        self.observation_space = spaces.Box(low=-1, high=1, shape=(self.row ,self.col, self.channels), dtype=np.uint8)
         # self.observation_space = spaces.Discrete(self.row * self.col * self.channels)
         # self.observation_space = spaces.Box(low=0, high=70, shape=(7, 70), dtype=np.uint8)
         self.viewer = None
@@ -87,7 +87,7 @@ class MultiAgentDCAEnv(gym.Env):
 
     def step(self, action):
         if self.check_dca(action):
-            self.reward = 1.0 - (0.001 * self.duptimes)
+            self.reward = 1.0
             if (self.duptimes > 0):
                 print(action, self.duptimes)
             self.state[self.current_base_station[0][0]][self.current_base_station[0][1]] = 0
@@ -95,8 +95,9 @@ class MultiAgentDCAEnv(gym.Env):
             self.current_base_station = np.random.randint(self.col, size=(1, 2))
             self.duptimes = 0
         else:
-            # self.reward = 1.0 
-            self.reward = 0 - (0.001 * self.duptimes)
+            # self.reward = 1.0
+            self.state[self.current_base_station[0][0]][self.current_base_station[0][1]][action] = -1
+            self.reward = 0 - (0.0001 * self.duptimes)
             self.blocktimes +=1
             self.duptimes += 1
         self.timestep +=1

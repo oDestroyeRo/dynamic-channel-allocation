@@ -28,7 +28,7 @@ class DQNAgent:
         self.model = Sequential()
         self.model.add(Conv2D(32,
                               2,
-                              strides=(1, 1),
+                              strides=(2, 2),
                               padding="valid",
                               activation="relu",
                               input_shape=state_size,

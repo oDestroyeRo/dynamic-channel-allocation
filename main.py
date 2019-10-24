@@ -51,7 +51,7 @@ class DQNAgent:
         self.model.add(Dense(256, activation="relu"))
         self.model.add(Dense(action_size))
         self.model.compile(loss="mean_squared_error",
-                           optimizer=Adam(lr=learning_rate),
+                           optimizer=Adam(lr=self.learning_rate),
                            metrics=["accuracy"])
         self.model.summary()
         return self.model

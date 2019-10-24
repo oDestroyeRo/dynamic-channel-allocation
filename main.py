@@ -1,5 +1,4 @@
 import os
-os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
 from keras import *
 from keras.layers import *
 from keras.optimizers import *

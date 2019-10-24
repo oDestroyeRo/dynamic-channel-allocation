@@ -106,7 +106,7 @@ if __name__ == "__main__":
     agent = DQNAgent(state_size, action_size)
 
     done = False
-    batch_size = 64
+    batch_size = 32
 
     state = env.reset()
     # print(state.shape())

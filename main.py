@@ -116,7 +116,7 @@ if __name__ == "__main__":
         next_state, reward, done, _ = env.step(action)
         if time%100 == 0:
             print(time, env.get_blockprop())
-            with open('dqn_init_70.csv', 'a') as newFile:
+            with open('results/dqn_init_70.csv', 'a') as newFile:
                 newFileWriter = csv.writer(newFile)
                 newFileWriter.writerow([time, env.get_blockprop()])
 

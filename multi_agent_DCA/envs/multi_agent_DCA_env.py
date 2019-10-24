@@ -9,8 +9,8 @@ class MultiAgentDCAEnv(gym.Env):
 
     metadata = {'render.modes': ['human', 'rgb_array']}
     def __init__(self):
-        self.row = 7
-        self.col = 7
+        self.row = 9
+        self.col = 9
         self.channels = 70
         # self.global_base_stations = np.empty([self.row, self.col], dtype=int)
         self.current_base_station = np.random.randint(self.col, size=(1, 2))

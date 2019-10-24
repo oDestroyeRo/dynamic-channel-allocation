@@ -87,7 +87,7 @@ class MultiAgentDCAEnv(gym.Env):
 
     def step(self, action):
         if self.check_dca(action):
-            self.reward = 1.0 - (0.01 * self.duptimes)
+            self.reward = 1.0 - (0.001 * self.duptimes)
             if (self.duptimes > 0):
                 print(action, self.duptimes)
             self.state[self.current_base_station[0][0]][self.current_base_station[0][1]] = 0
@@ -96,7 +96,7 @@ class MultiAgentDCAEnv(gym.Env):
             self.duptimes = 0
         else:
             # self.reward = 1.0 
-            self.reward = 0 - (0.1 * self.duptimes)
+            self.reward = 0 - (0.001 * self.duptimes)
             self.blocktimes +=1
             self.duptimes += 1
         self.timestep +=1

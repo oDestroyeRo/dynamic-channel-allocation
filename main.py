@@ -28,7 +28,7 @@ class DQNAgent:
         self.model = Sequential()
         self.model.add(Conv2D(32,
                               2,
-                              strides=(2, 2),
+                              strides=(1, 1),
                               padding="valid",
                               activation="relu",
                               input_shape=state_size,
@@ -51,7 +51,7 @@ class DQNAgent:
         self.model.add(Dense(256, activation="relu"))
         self.model.add(Dense(action_size))
         self.model.compile(loss="mean_squared_error",
-                           optimizer=Adam(lr=0.00025),
+                           optimizer=Adam(lr=learning_rate),
                            metrics=["accuracy"])
         self.model.summary()
         return self.model

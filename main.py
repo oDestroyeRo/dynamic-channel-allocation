@@ -1,5 +1,5 @@
 import os
-# os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
+os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
 from keras import *
 from keras.layers import *
 from keras.optimizers import *
@@ -41,7 +41,7 @@ class DQNAgent:
                               activation="relu",
                               input_shape=state_size,
                               data_format="channels_last"))
-        self.model.add(Conv2D(32,
+        self.model.add(Conv2D(64,
                               2,
                               strides=(1, 1),
                               padding="valid",
@@ -119,7 +119,7 @@ if __name__ == "__main__":
         next_state, reward, done, _ = env.step(action)
         if time%100 == 0:
             print(time, env.get_blockprop())
-            with open('results/dqn_init_70.csv', 'a') as newFile:
+            with open('dqn_init_70.csv', 'a') as newFile:
                 newFileWriter = csv.writer(newFile)
                 newFileWriter.writerow([time, env.get_blockprop()])
 

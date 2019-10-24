@@ -96,7 +96,7 @@ class MultiAgentDCAEnv(gym.Env):
             self.duptimes = 0
         else:
             # self.reward = 1.0 
-            self.reward = -self.duptimes
+            self.reward = 0 - self.duptimes
             self.blocktimes +=1
             self.duptimes += 1
         self.timestep +=1

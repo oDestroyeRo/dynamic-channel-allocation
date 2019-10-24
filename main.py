@@ -4,11 +4,8 @@ from keras import *
 from keras.layers import *
 from keras.optimizers import *
 
-from view.gui import Window
 import argparse
 import multi_agent_DCA
-from controllers.simulation import Simulation
-from controllers.controller import Controller
 import gym
 
 from collections import deque
@@ -93,7 +90,7 @@ if __name__ == "__main__":
     state = np.reshape(state, [1, state_size])
     for time in range(99999999):
         # env.render()
-        # action = agent.act(state)
+        action = agent.act(state)
         next_state, reward, done, _ = env.step(env.action_space.sample())
         if time%1000 == 0:
             print(time, env.get_blockprop(), next_state)

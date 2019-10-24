@@ -19,7 +19,14 @@ class MultiAgentDCAEnv(gym.Env):
         self.state = np.empty([self.row, self.col], dtype=int)
         for i in range(self.row):
             for j in range(self.col):
-                self.state[i][j] = -1
+                action = np.random.randint(0, self.channels)
+                self.current_base_station[0][0] = i
+                self.current_base_station[0][1] = j
+                while self.check_dca(action) == False:
+                    action = np.random.randint(0, self.channels)
+                self.state[i][j] = action
+
+            
 
         # self.agents = 49
         # self.action_space = []
@@ -62,7 +69,7 @@ class MultiAgentDCAEnv(gym.Env):
 
     def step(self, action):
         if self.check_dca(action):
-            self.reward = +1.0
+            self.reward = 1.0
             self.state[self.current_base_station[0][0]][self.current_base_station[0][1]] = action
             self.current_base_station = np.random.randint(self.col, size=(1, 2))
             self.duptimes = 0

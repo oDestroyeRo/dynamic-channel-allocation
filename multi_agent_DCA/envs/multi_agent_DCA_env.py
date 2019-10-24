@@ -11,12 +11,12 @@ class MultiAgentDCAEnv(gym.Env):
     def __init__(self):
         self.row = 7
         self.col = 7
-        self.channels = 35
+        self.channels = 70
         # self.global_base_stations = np.empty([self.row, self.col], dtype=int)
         self.current_base_station = np.random.randint(self.col, size=(1, 2))
         self.reward = 0
         self.timestep = 0
-        self.state = np.empty([self.row, self.col], dtype=int)
+        self.state = np.empty([self.row, self.col, self.channels], dtype=int)
         for i in range(self.row):
             for j in range(self.col):
                 action = np.random.randint(0, self.channels)
@@ -24,7 +24,11 @@ class MultiAgentDCAEnv(gym.Env):
                 self.current_base_station[0][1] = j
                 while self.check_dca(action) == False:
                     action = np.random.randint(0, self.channels)
-                self.state[i][j] = action
+                self.state[i][j][action] = 1
+
+        # for i in range(self.row):
+        #     for j in range(self.col):
+        #         self.state[i][j] = -1
 
             
 
@@ -35,8 +39,8 @@ class MultiAgentDCAEnv(gym.Env):
         # self.observation_space.append(spaces.Discrete(70))
         # agent.action.c = np.zeros(70)
         self.action_space = spaces.Discrete(self.channels)
-        # self.observation_space = spaces.Box(low=0, high=self.channels, shape=(self.row ,self.col), dtype=np.uint8)
-        self.observation_space = spaces.Discrete(self.row * self.col)
+        self.observation_space = spaces.Box(low=0, high=1, shape=(self.row ,self.col, self.channels), dtype=np.uint8)
+        # self.observation_space = spaces.Discrete(self.row * self.col * self.channels)
         # self.observation_space = spaces.Box(low=0, high=70, shape=(7, 70), dtype=np.uint8)
         self.viewer = None
         self.seed()
@@ -53,28 +57,46 @@ class MultiAgentDCAEnv(gym.Env):
         c_bs_r = self.current_base_station[0][0] 
         c_bs_c = self.current_base_station[0][1]
  
-        if c_bs_r != 0 and action == self.state[c_bs_r-1][c_bs_c]:
+        # if c_bs_r != 0 and action == self.state[c_bs_r-1][c_bs_c]:
+        #     return False
+        # if c_bs_r != self.row-1 and action == self.state[c_bs_r+1][c_bs_c]:
+        #     return False
+        # if c_bs_c != 0 and action == self.state[c_bs_r][c_bs_c-1]:
+        #     return False
+        # if c_bs_c != self.col-1 and action == self.state[c_bs_r][c_bs_c+1]:
+        #     return False
+        # if c_bs_r != self.row-1 and c_bs_c != 0 and action == self.state[c_bs_r+1][c_bs_c-1]:
+        #     return False
+        # if c_bs_r != 0 and c_bs_c != self.col-1 and action == self.state[c_bs_r-1][c_bs_c+1]:
+        #     return False
+        # return True
+
+        if c_bs_r != 0 and self.state[c_bs_r-1][c_bs_c][action] == 1:
             return False
-        if c_bs_r != self.row-1 and action == self.state[c_bs_r+1][c_bs_c]:
+        if c_bs_r != self.row-1 and self.state[c_bs_r+1][c_bs_c][action] == 1:
             return False
-        if c_bs_c != 0 and action == self.state[c_bs_r][c_bs_c-1]:
+        if c_bs_c != 0 and self.state[c_bs_r][c_bs_c-1][action] == 1:
             return False
-        if c_bs_c != self.col-1 and action == self.state[c_bs_r][c_bs_c+1]:
+        if c_bs_c != self.col-1 and self.state[c_bs_r][c_bs_c+1][action] == 1:
             return False
-        if c_bs_r != self.row-1 and c_bs_c != 0 and action == self.state[c_bs_r+1][c_bs_c-1]:
+        if c_bs_r != self.row-1 and c_bs_c != 0 and self.state[c_bs_r+1][c_bs_c-1][action] == 1:
             return False
-        if c_bs_r != 0 and c_bs_c != self.col-1 and action == self.state[c_bs_r-1][c_bs_c+1]:
+        if c_bs_r != 0 and c_bs_c != self.col-1 and self.state[c_bs_r-1][c_bs_c+1][action] == 1:
             return False
         return True
 
     def step(self, action):
         if self.check_dca(action):
-            self.reward = 1.0
-            self.state[self.current_base_station[0][0]][self.current_base_station[0][1]] = action
+            self.reward = 1.0 - self.duptimes
+            if (self.duptimes > 0):
+                print(action, self.duptimes)
+            self.state[self.current_base_station[0][0]][self.current_base_station[0][1]] = 0
+            self.state[self.current_base_station[0][0]][self.current_base_station[0][1]][action] = 1
             self.current_base_station = np.random.randint(self.col, size=(1, 2))
             self.duptimes = 0
         else:
-            self.reward = -1.0 - 0.001 * self.duptimes
+            # self.reward = 1.0 
+            self.reward = -self.duptimes
             self.blocktimes +=1
             self.duptimes += 1
         self.timestep +=1

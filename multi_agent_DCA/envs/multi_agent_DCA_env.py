@@ -9,15 +9,16 @@ class MultiAgentDCAEnv(gym.Env):
 
     metadata = {'render.modes': ['human', 'rgb_array']}
     def __init__(self):
-        self.row = 9
-        self.col = 9
-        self.channels = 70
+        self.row = 7
+        self.col = 7
+        self.channels = 35
         self.global_base_stations = np.empty([self.row, self.col, self.channels], dtype=int)
         self.current_base_station = np.random.randint(self.col, size=(1, 2))
         self.reward = 0
         self.timestep = 0
         self.blocktimes = 0
         self.state = None
+        self.fail = 0
         for i in range(self.row):
             for j in range(self.col):
                 action = np.random.randint(0, self.channels)
@@ -26,10 +27,10 @@ class MultiAgentDCAEnv(gym.Env):
                 while self.check_dca(action) == False:
                     action = np.random.randint(0, self.channels)
                 self.global_base_stations[i][j][action] = 1
-
+        self.temp_gbs = self.global_base_stations 
         self.action_space = spaces.Discrete(self.channels)
         # self.observation_space = spaces.Discrete(self.row * self.col)
-        self.observation_space = spaces.Box(low=-1, high=1, shape=(self.row, self.col, self.channels))
+        self.observation_space = spaces.Box(low=0, high=2, shape=(self.row, self.col, self.channels))
 
         self.viewer = None
         self.seed()
@@ -56,34 +57,55 @@ class MultiAgentDCAEnv(gym.Env):
         return True
 
     def step(self, action):
+        done = False
         if self.check_dca(action):
-            self.reward = 10.0
+            self.reward = 1
             #if (self.duptimes > 0):
                 #print(action, self.duptimes)
             self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 0
             self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][action] = 1
             # self.current_base_station = np.random.randint(self.col, size=(1, 2))
+            # self.current_base_station = np.random.randint(self.col, size=(1, 2))
+            self.current_base_station[0][0] += 1
+            if self.current_base_station[0][0] >= self.row:
+                self.current_base_station[0][0] = 0
+            self.current_base_station[0][1] += 1
+            if self.current_base_station[0][1] >= self.col:
+                self.current_base_station[0][1] = 0
+
+
+            self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 2
             self.duptimes = 0
-            done = True
+            done = False
+            self.timestep +=1
         else:
             # self.reward = 1.0
-            self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][action] = -1
-            self.reward = (-1 * self.duptimes)
-            self.blocktimes +=1
-            self.duptimes += 1
-            done = False
-        self.timestep +=1
+            # self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][action] = 2
+            self.reward = 0
+            # self.duptimes += 1
+            # done = False
+            self.fail += 1
+            if self.fail >= 1:
+                self.blocktimes +=1
+                done = True
+                self.fail = 0
+                self.timestep +=1
+
         # for agent in actions:
         self.state = self.global_base_stations
         #     if agent.action == 1:
         # channel = self.state
         return self.state, self.reward, done, {}
 
-    def get_blockprop(self):
+    def get_blockprob(self):
         return self.blocktimes/self.timestep
 
     def reset(self):
+        self.global_base_stations = self.temp_gbs
+        # self.current_base_station[0][0] = int(self.row / 2)
+        # self.current_base_station[0][1] = int(self.col / 2)
         self.current_base_station = np.random.randint(self.col, size=(1, 2))
+        self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 2
         self.state = self.global_base_stations
         return self.state
 

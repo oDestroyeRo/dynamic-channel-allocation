@@ -13,20 +13,19 @@ import random
 import csv
 
 class DQNAgent():
-    def __init__(self, state_space, action_space, episodes=850000):
+    def __init__(self, state_space, action_space, episodes=100000):
 
         self.action_space = action_space
-        self.use_nn = 0
         # experience buffer
         self.memory = []
-
+        self.memory_size = 900000
         # discount rate
         self.gamma = 0.99
 
         # initially 90% exploration, 10% exploitation
         self.epsilon = 1.0
         # iteratively applying decay til 10% exploration/90% exploitation
-        self.epsilon_min = 0.1
+        self.epsilon_min = 0.005
         self.epsilon_decay = self.epsilon_min / self.epsilon
         self.epsilon_decay = self.epsilon_decay ** (1. / float(episodes))
 
@@ -38,9 +37,7 @@ class DQNAgent():
         # print(n_inputs)
         n_outputs = action_space.n
         self.q_model = self.build_model(n_inputs, n_outputs)
-        self.q_model.compile(loss='mse', optimizer=RMSprop(lr=0.00025,
-                                            rho=0.95,
-                                            epsilon=0.01),
+        self.q_model.compile(loss='mse', optimizer=Adam(),
                            metrics=["accuracy"])
         # target Q Network
         self.target_q_model = self.build_model(n_inputs, n_outputs)
@@ -60,9 +57,9 @@ class DQNAgent():
         model = Sequential()
         # model.add(Embedding(n_inputs, 10, input_length=1))
         # model.add(Reshape((10,)))
-        model.add(Conv2D(32, (2,2), activation='relu', input_shape=n_inputs))
-        model.add(Conv2D(64, (1,1), activation='relu'))
-        model.add(Conv2D(64, (1,1), activation='relu'))
+        model.add(Conv2D(32, 2, strides=(1, 1), activation='relu', input_shape=n_inputs, padding="valid", data_format="channels_last"))
+        model.add(Conv2D(64, 2, strides=(1, 1), activation='relu', padding="valid", input_shape=n_inputs, data_format="channels_last"))
+        model.add(Conv2D(64, 2, strides=(1, 1), activation='relu', padding="valid", input_shape=n_inputs, data_format="channels_last"))
         model.add(Flatten())
         model.add(Dense(256, activation='relu'))
         model.add(Dense(n_outputs, activation='linear', name='action'))
@@ -85,7 +82,6 @@ class DQNAgent():
         if np.random.rand() < self.epsilon:
             # explore .- do random action
             return self.action_space.sample()
-        self.use_nn += 1
         # exploit
         q_values = self.q_model.predict(state)
         # select the action with max Q-value
@@ -96,6 +92,9 @@ class DQNAgent():
     def remember(self, state, action, reward, next_state, done):
         item = (state, action, reward, next_state, done)
         self.memory.append(item)
+
+        if len(self.memory) > self.memory_size:
+            self.memory.pop(0)
 
 
     # compute Q_max
@@ -192,7 +191,7 @@ if __name__ == "__main__":
     agent = DQNAgent(env.observation_space, env.action_space)
 
     # should be solved in this number of episodes
-    episode_count = 9999993000
+    episode_count = 1000000
     # state_size = env.observation_space
     batch_size = 64
 
@@ -200,6 +199,8 @@ if __name__ == "__main__":
     # you can use this to experiment beyond 200
     # env._max_episode_steps = 4000
     count = 0
+    total_reward = 0
+    total_block_prob = 0
     # Q-Learning sampling and fitting
     for episode in range(episode_count):
         state = env.reset()
@@ -208,28 +209,30 @@ if __name__ == "__main__":
         # state = np.eye(state_size)[state]
         state = np.expand_dims(state, 0)
         done = False
-        total_reward = 0
         while not done:
             action = agent.act(state)
             next_state, reward, done, _ = env.step(action)
             next_state = np.expand_dims(next_state, 0)
-            # next_state = np.eye(state_size)[next_state]
-            # next_state = np.reshape(next_state, [1, state_size])
+
             # store every experience unit in replay buffer
             agent.remember(state, action, reward, next_state, done)
             state = next_state
             total_reward += reward
-            if count%100 == 0:
-                #print(count, env.get_blockprop(), agent.epsilon, total_reward)
-                with open('results/dqn_init_70_2.csv', 'a') as newFile:
-                    newFileWriter = csv.writer(newFile)
-                    newFileWriter.writerow([count, env.get_blockprop(), agent.epsilon, agent.use_nn])
-                agent.use_nn = 0
             count += 1
-
+        total_block_prob += env.get_blockprob()
+        if episode%100 == 0:
+            #print(count, env.get_blockprop(), agent.epsilon, total_reward)
+            with open('results/dqn_init_70_ran_2.csv', 'a') as newFile:
+                newFileWriter = csv.writer(newFile)
+                newFileWriter.writerow([count, total_block_prob/100, total_reward/100, agent.epsilon])
+            total_reward = 0
+            total_block_prob = 0
+            env.blocktimes = 0
+            env.timestep = 0
         # call experience relay
         if len(agent.memory) >= batch_size:
             agent.replay(batch_size)
+
 
     # close the env and write monitor result info to disk
     env.close() 

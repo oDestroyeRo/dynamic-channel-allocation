@@ -20,7 +20,7 @@ class DQNAgent():
         self.memory = []
         self.memory_size = 900000
         # discount rate
-        self.gamma = 0.99
+        self.gamma = 0.95
 
         # initially 90% exploration, 10% exploitation
         self.epsilon = 1.0
@@ -29,12 +29,10 @@ class DQNAgent():
         self.epsilon_decay = self.epsilon_min / self.epsilon
         self.epsilon_decay = self.epsilon_decay ** (1. / float(episodes))
 
-        # Q Network weights filename
-        self.weights_file = 'dqn_cartpole.h5'
+
         # Q Network for training
         n_inputs = state_space.shape
-        # n_inputs = np.expand_dims(n_inputs, axis=0)
-        # print(n_inputs)
+
         n_outputs = action_space.n
         self.q_model = self.build_model(n_inputs, n_outputs)
         self.q_model.compile(loss='mse', optimizer=Adam(),
@@ -175,15 +173,9 @@ def parse_args():
 if __name__ == "__main__":
 
     # args = parse_args()
-    # c = Controller(args)
-    # c.start()
-
-    # root.update()ˇ
 
     env = gym.make('multi-agent-DCA-v0')
-    # env = gym.make('Taxi-v3')
-    # print(env.reset())
-    # state_size = env.observation_space.shape[0]
+
     state_size = env.observation_space
     action_size = env.action_space
 
@@ -192,21 +184,16 @@ if __name__ == "__main__":
 
     # should be solved in this number of episodes
     episode_count = 1000000
-    # state_size = env.observation_space
+
     batch_size = 64
 
-    # by default, CartPole-v0 has max episode steps = 200
-    # you can use this to experiment beyond 200
-    # env._max_episode_steps = 4000
     count = 0
     total_reward = 0
     total_block_prob = 0
     # Q-Learning sampling and fitting
     for episode in range(episode_count):
         state = env.reset()
-        # print(state)
-        # state = np.reshape(state, [1, state_size])
-        # state = np.eye(state_size)[state]
+
         state = np.expand_dims(state, 0)
         done = False
         while not done:
@@ -222,7 +209,7 @@ if __name__ == "__main__":
         total_block_prob += env.get_blockprob()
         if episode%100 == 0:
             #print(count, env.get_blockprop(), agent.epsilon, total_reward)
-            with open('results/dqn_init_70_ran_2.csv', 'a') as newFile:
+            with open('results/dqn_init_70_ran_3.csv', 'a') as newFile:
                 newFileWriter = csv.writer(newFile)
                 newFileWriter.writerow([count, total_block_prob/100, total_reward/100, agent.epsilon])
             total_reward = 0

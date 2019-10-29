@@ -5,7 +5,7 @@ import numpy as np
 import pyglet
 # from multi_discrete import MultiDiscrete
 
-class MultiAgentDCAEnv(gym.Env):
+class SingleChannelDCAEnv(gym.Env):
 
     metadata = {'render.modes': ['human', 'rgb_array']}
     def __init__(self):
@@ -18,7 +18,7 @@ class MultiAgentDCAEnv(gym.Env):
         self.timestep = 0
         self.blocktimes = 0
         self.state = None
-        self.fail = 0
+
         for i in range(self.row):
             for j in range(self.col):
                 action = np.random.randint(0, self.channels)
@@ -60,12 +60,10 @@ class MultiAgentDCAEnv(gym.Env):
         done = False
         if self.check_dca(action):
             self.reward = 1
-            #if (self.duptimes > 0):
-                #print(action, self.duptimes)
+
             self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 0
             self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][action] = 1
-            # self.current_base_station = np.random.randint(self.col, size=(1, 2))
-            # self.current_base_station = np.random.randint(self.col, size=(1, 2))
+
             self.current_base_station[0][0] += 1
             if self.current_base_station[0][0] >= self.row:
                 self.current_base_station[0][0] = 0
@@ -79,22 +77,15 @@ class MultiAgentDCAEnv(gym.Env):
             done = False
             self.timestep +=1
         else:
-            # self.reward = 1.0
-            # self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][action] = 2
-            self.reward = 0
-            # self.duptimes += 1
-            # done = False
-            self.fail += 1
-            if self.fail >= 1:
-                self.blocktimes +=1
-                done = True
-                self.fail = 0
-                self.timestep +=1
 
-        # for agent in actions:
+            self.reward = 0
+
+            self.blocktimes +=1
+            done = True
+            self.timestep +=1
+
         self.state = self.global_base_stations
-        #     if agent.action == 1:
-        # channel = self.state
+
         return self.state, self.reward, done, {}
 
     def get_blockprob(self):
@@ -112,21 +103,10 @@ class MultiAgentDCAEnv(gym.Env):
     def render(self, mode='human'):
         screen_width = 600
         screen_height = 400
-        # world_width = self.x_threshold*2
-        # scale = screen_width/world_width
-        # carty = 100 # TOP OF CART
-        # polewidth = 10.0
-        # polelen = scale * (2 * self.length)
-        # cartwidth = 50.0
-        # cartheight = 30.0
+
         if self.viewer is None:
             from gym.envs.classic_control import rendering
             self.viewer = rendering.Viewer(screen_width, screen_height)
-
-            # self.track = rendering.FilledPolygon([(0,0), (100,100), (200,200), (300,300)])
-            # self.track.add_attr(rendering.Transform(translation=(0, 10)))
-            # # self.track.set_color(222,222,222)
-            # self.viewer.add_geom(self.track)
 
             x=30
             y=screen_height-10
@@ -148,8 +128,6 @@ class MultiAgentDCAEnv(gym.Env):
             # self.viewer.add_geom(DrawText(label))
         return self.viewer.render(return_rgb_array = mode=='rgb_array')
 
-
-
     def close(self):
         if self.viewer:
             self.viewer.close()
@@ -160,8 +138,7 @@ class MultiAgentDCAEnv(gym.Env):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-# class DrawText:
-#     def __init__(self, label:pyglet.text.Label):
-#         self.label=label
-#     def render(self):
-#         self.label.draw()
+
+
+        
+

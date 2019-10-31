@@ -2,3 +2,4 @@
 /plaidml-venv
 /results
 /.vscode
+.DS_Store

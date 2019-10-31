@@ -1,4 +1,4 @@
-from controllers.runner import SingleChannelRunner
+from controllers.runner import SingleChannelRunner, MultiChannelRunner
 import argparse
 
 def parse_args():
@@ -14,6 +14,10 @@ if __name__ == "__main__":
     args = parse_args()
 
     if args.channel == "single":
-        runner = SingleChannelRunner()
+        runner = SingleChannelRunner(args)
+        runner.train()
+
+    if args.channel == "multi":
+        runner = MultiChannelRunner(args)
         runner.train()
 

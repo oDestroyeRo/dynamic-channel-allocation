@@ -1,14 +1,12 @@
 from collections import deque
 import numpy as np
-from keras import *
-from keras.layers import *
 from keras.optimizers import *
 import random
+from models.policy import Policy
 
 
 class DQNAgent():
-    def __init__(self, state_space, action_space, episodes=100000):
-
+    def __init__(self, state_space, action_space, args, episodes=100000):
         self.action_space = action_space
         # experience buffer
         self.memory = []
@@ -28,11 +26,19 @@ class DQNAgent():
         n_inputs = state_space.shape
 
         n_outputs = action_space.n
-        self.q_model = self.build_model(n_inputs, n_outputs)
+        policy = Policy()
+
+        if args.channel == "single":
+            self.target_q_model = policy.single_channel_build_model(n_inputs, n_outputs)
+            self.q_model = policy.single_channel_build_model(n_inputs, n_outputs)
+            
+        if args.channel == "multi":
+            self.target_q_model = policy.multi_channel_build_model(n_inputs, n_outputs)
+            self.q_model = policy.multi_channel_build_model(n_inputs, n_outputs)
+
         self.q_model.compile(loss='mse', optimizer=Adam(),
                            metrics=["accuracy"])
-        # target Q Network
-        self.target_q_model = self.build_model(n_inputs, n_outputs)
+
         # copy Q Network params to target Q Network
         self.update_weights()
 
@@ -44,19 +50,19 @@ class DQNAgent():
             print("-------------DQN------------")
 
     
-    # Q Network is 256-256-256 MLP
-    def build_model(self, n_inputs, n_outputs):
-        model = Sequential()
-        # model.add(Embedding(n_inputs, 10, input_length=1))
-        # model.add(Reshape((10,)))
-        model.add(Conv2D(32, 2, strides=(1, 1), activation='relu', input_shape=n_inputs, padding="valid", data_format="channels_last"))
-        model.add(Conv2D(64, 2, strides=(1, 1), activation='relu', padding="valid", input_shape=n_inputs, data_format="channels_last"))
-        model.add(Conv2D(64, 2, strides=(1, 1), activation='relu', padding="valid", input_shape=n_inputs, data_format="channels_last"))
-        model.add(Flatten())
-        model.add(Dense(256, activation='relu'))
-        model.add(Dense(n_outputs, activation='linear', name='action'))
-        model.summary()
-        return model
+    # # Q Network is 256-256-256 MLP
+    # def build_model(self, n_inputs, n_outputs):
+    #     model = Sequential()
+    #     # model.add(Embedding(n_inputs, 10, input_length=1))
+    #     # model.add(Reshape((10,)))
+    #     model.add(Conv2D(32, 2, strides=(1, 1), activation='relu', input_shape=n_inputs, padding="valid", data_format="channels_last"))
+    #     model.add(Conv2D(64, 2, strides=(1, 1), activation='relu', padding="valid", input_shape=n_inputs, data_format="channels_last"))
+    #     model.add(Conv2D(64, 2, strides=(1, 1), activation='relu', padding="valid", input_shape=n_inputs, data_format="channels_last"))
+    #     model.add(Flatten())
+    #     model.add(Dense(256, activation='relu'))
+    #     model.add(Dense(n_outputs, activation='linear', name='action'))
+    #     model.summary()
+    #     return model
 
 
     # save Q Network params to a file

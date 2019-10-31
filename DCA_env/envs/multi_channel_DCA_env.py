@@ -19,16 +19,37 @@ class MultiChannelDCAEnv(gym.Env):
         self.blocktimes = 0
         self.state = None
 
-        for i in range(self.row):
-            for j in range(self.col):
-                action = np.random.randint(0, self.channels)
-                self.current_base_station[0][0] = i
-                self.current_base_station[0][1] = j
-                while self.check_dca(action) == False:
-                    action = np.random.randint(0, self.channels)
-                self.global_base_stations[i][j][action] = 1
+        n_action = self.create_list_code()
+        # temp = 1
+        # channel_num = 0
+        # for i in range(channels):
+        #     channel_num += temp
+        #     temp += 1
+        
+
+
+        # list_code = []
+
+        # for i in range(channels):
+        #     col = channels
+        #     for j in range(col):
+        #         num_set =  channels - col + 1
+
+        #         for k in range(num_set):
+        #             print(j,k)
+
+        #         col-=1
+        # for i in range(self.row):
+        #     for j in range(self.col):
+        #         action = np.random.randint(0, self.channels)
+        #         self.current_base_station[0][0] = i
+        #         self.current_base_station[0][1] = j
+        #         while self.check_dca(action) == False:
+        #             action = np.random.randint(0, self.channels)
+        #         self.global_base_stations[i][j][action] = 1
+
         self.temp_gbs = self.global_base_stations 
-        self.action_space = spaces.Discrete(self.channels)
+        self.action_space = spaces.Discrete(n_action)
         # self.observation_space = spaces.Discrete(self.row * self.col)
         self.observation_space = spaces.Box(low=0, high=2, shape=(self.row, self.col, self.channels))
 
@@ -37,32 +58,54 @@ class MultiChannelDCAEnv(gym.Env):
 
         self.duptimes = 0
 
+    def create_list_code(self):
+        self.list_code = []
+        count = 0
+        col = self.channels
+        for j in range(col):
+            num_set =  self.channels - col
+
+            for k in range(self.channels-num_set):
+                array = []
+                for l in range(num_set + 1):
+                    array.append(l+k)
+                self.list_code.append(array)
+                count += 1
+            col-=1
+        return count
+
     
     def check_dca(self, action):
         c_bs_r = self.current_base_station[0][0] 
         c_bs_c = self.current_base_station[0][1]
 
-        if c_bs_r != 0 and self.global_base_stations[c_bs_r-1][c_bs_c][action] == 1:
-            return False
-        if c_bs_r != self.row-1 and self.global_base_stations[c_bs_r+1][c_bs_c][action] == 1:
-            return False
-        if c_bs_c != 0 and self.global_base_stations[c_bs_r][c_bs_c-1][action] == 1:
-            return False
-        if c_bs_c != self.col-1 and self.global_base_stations[c_bs_r][c_bs_c+1][action] == 1:
-            return False
-        if c_bs_r != self.row-1 and c_bs_c != 0 and self.global_base_stations[c_bs_r+1][c_bs_c-1][action] == 1:
-            return False
-        if c_bs_r != 0 and c_bs_c != self.col-1 and self.global_base_stations[c_bs_r-1][c_bs_c+1][action] == 1:
-            return False
+
+        for i in range(len(self.list_code[action-1])):
+            if c_bs_r != 0 and self.global_base_stations[c_bs_r-1][c_bs_c][i] == 1:
+                return False
+            if c_bs_r != self.row-1 and self.global_base_stations[c_bs_r+1][c_bs_c][i] == 1:
+                return False
+            if c_bs_c != 0 and self.global_base_stations[c_bs_r][c_bs_c-1][i] == 1:
+                return False
+            if c_bs_c != self.col-1 and self.global_base_stations[c_bs_r][c_bs_c+1][i] == 1:
+                return False
+            if c_bs_r != self.row-1 and c_bs_c != 0 and self.global_base_stations[c_bs_r+1][c_bs_c-1][i] == 1:
+                return False
+            if c_bs_r != 0 and c_bs_c != self.col-1 and self.global_base_stations[c_bs_r-1][c_bs_c+1][i] == 1:
+                return False
         return True
 
     def step(self, action):
         done = False
         if self.check_dca(action):
             self.reward = 1
+            set_action = self.list_code[action-1]
+
 
             self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 0
-            self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][action] = 1
+
+            for i in range(len(set_action)):
+                self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][i] = 1
 
             self.current_base_station[0][0] += 1
             if self.current_base_station[0][0] >= self.row:

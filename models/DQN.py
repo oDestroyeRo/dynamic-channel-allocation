@@ -17,7 +17,7 @@ class DQNAgent():
         # initially 90% exploration, 10% exploitation
         self.epsilon = 1.0
         # iteratively applying decay til 10% exploration/90% exploitation
-        self.epsilon_min = 0.005
+        self.epsilon_min = 0.1
         self.epsilon_decay = self.epsilon_min / self.epsilon
         self.epsilon_decay = self.epsilon_decay ** (1. / float(episodes))
 

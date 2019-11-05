@@ -1,5 +1,7 @@
 from controllers.runner import SingleChannelRunner, MultiChannelRunner
 import argparse
+import os
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 def parse_args():
     parser = argparse.ArgumentParser("Reinforcement Learning experiments for multiagent environments")

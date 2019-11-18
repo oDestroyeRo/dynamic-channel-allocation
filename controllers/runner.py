@@ -5,10 +5,11 @@ from models.DQN import DQNAgent
 import DCA_env
 from datetime import datetime
 from tqdm import tqdm
-from stable_baselines.common.policies import MlpPolicy
+from stable_baselines.common.policies import MlpPolicy, CnnPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
 from stable_baselines import PPO2
 from stable_baselines.bench import Monitor
+
 
 
 class SingleChannelRunner:
@@ -66,15 +67,15 @@ class SingleChannelRunner:
 class MultiChannelPPORunner:
     def __init__(self, args):
         import os
-        os.environ["CUDA_VISIBLE_DEVICES"]="0"
+        os.environ["CUDA_VISIBLE_DEVICES"]="1"
         self.args = args
         self.log_dir = "tmp/"
     def train(self):
         env = gym.make('multi-channel-DCA-v0')
-        env = Monitor(env, self.log_dir, allow_early_resets=True)
+        env = Monitor(env, self.log_dir)
         env = DummyVecEnv([lambda: env])
         model = PPO2(MlpPolicy, env, verbose=1)
-        model.learn(total_timesteps=999999)
+        model.learn(total_timesteps=99999999)
         model.save(self.log_dir + "ppo2_multi")
 
     def test(self):

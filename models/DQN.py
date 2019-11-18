@@ -32,7 +32,7 @@ class DQNAgent():
             self.target_q_model = policy.single_channel_build_model(n_inputs, n_outputs)
             self.q_model = policy.single_channel_build_model(n_inputs, n_outputs)
             
-        if args.channel == "multi":
+        elif args.channel == "multi":
             self.target_q_model = policy.multi_channel_build_model(n_inputs, n_outputs)
             self.q_model = policy.multi_channel_build_model(n_inputs, n_outputs)
 

@@ -19,10 +19,10 @@ class MultiChannelDCAEnv(gym.Env):
         self.channels = math.ceil(self.channels)
         self.channels = int(self.channels * 2)
 
-        self.global_base_stations = np.empty([self.row, self.col, self.channels], dtype=int)
+        self.global_base_stations = np.zeros([self.row, self.col, self.channels], dtype=int)
         # self.current_base_station = np.random.randint(self.col, size=(1, 2))
         self.current_base_station = np.array([[0,0]])
-        self.temp_cbs = self.current_base_station
+        # self.temp_cbs = self.current_base_station
         self.reward = 0
         self.timestep = 1
         self.blocktimes = 0
@@ -30,22 +30,13 @@ class MultiChannelDCAEnv(gym.Env):
         self.traffic_timestep = 0
         self.next_channel = math.ceil(self.traffic_data[ self.traffic_timestep, self.current_base_station[0][0], self.current_base_station[0][1], 1] / self.traffic_channel)
         self.remain_channel = self.next_channel
-        self.temp_nc = self.next_channel
+        # self.temp_nc = self.next_channel
         self.timestamp = self.traffic_data[ self.traffic_timestep, 0, 0, 0]
 
-
-        # for i in range(self.row):
-        #     for j in range(self.col):
-        #         action = np.random.randint(0, self.channels)
-        #         self.current_base_station[0][0] = i
-        #         self.current_base_station[0][1] = j
-        #         while self.check_dca(action) == False:
-        #             action = np.random.randint(0, self.channels)
-        #         self.global_base_stations[i][j][action] = 1
-        self.temp_gbs = self.global_base_stations 
+        # self.temp_gbs = self.global_base_stations 
         self.action_space = spaces.Discrete(self.channels)
         # self.observation_space = spaces.Discrete(self.row * self.col)
-        self.observation_space = spaces.Box(low=0, high=2, shape=(self.row, self.col, self.channels))
+        self.observation_space = spaces.Box(low=0, high=1, shape=(self.row, self.col, self.channels), dtype=np.int8)
 
         self.viewer = None
         self.seed()
@@ -76,19 +67,18 @@ class MultiChannelDCAEnv(gym.Env):
         done = False
         if self.check_dca(action):
             self.reward = 1.0
-
+            self.remain_channel -= 1
             # self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 0
             self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][action] = 1
-
             if self.remain_channel == 0:
                 # self.current_base_station[0][0] += 1
                 self.current_base_station[0][1] += 1
-
                 if self.current_base_station[0][1] >= self.col:
                     self.current_base_station[0][0] += 1
                     if self.current_base_station[0][0] >= self.row and self.current_base_station[0][1] >= self.col:
                         self.traffic_timestep += 1
                         if self.traffic_timestep >= self.traffic_data.shape[0]:
+                            self.reward = 0.0
                             done = True
                     self.current_base_station[0][1] = 0
                 if self.current_base_station[0][0] >= self.row:
@@ -96,20 +86,19 @@ class MultiChannelDCAEnv(gym.Env):
                 self.next_channel = math.ceil(self.traffic_data[ self.traffic_timestep, self.current_base_station[0][0], self.current_base_station[0][1], 1] / self.traffic_channel)
                 self.remain_channel = self.next_channel
                 self.timestep +=1
-
             else:
-                self.remain_channel -= 1
-                self.reward = 0.0
+                self.reward = 0.001
                 
-            self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 2
-            done = False
+            # self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 2
+            # done = False
         else:
-            self.reward = 0.0
+            self.reward = 0
             self.blocktimes +=1
             done = True
             self.timestep +=1
 
         self.state = self.global_base_stations
+
 
         return self.state, self.reward, done, {}
 
@@ -120,12 +109,15 @@ class MultiChannelDCAEnv(gym.Env):
         return self.timestamp
 
     def reset(self):
-        self.global_base_stations = self.temp_gbs
-        self.next_channel = self.temp_nc
+        # self.global_base_stations = self.temp_gbs
+        self.current_base_station = np.array([[0,0]])
+        self.global_base_stations = np.zeros([self.row, self.col, self.channels], dtype=int)
+        # self.next_channel = self.temp_nc
+        self.next_channel = math.ceil(self.traffic_data[ self.traffic_timestep, self.current_base_station[0][0], self.current_base_station[0][1], 1] / self.traffic_channel)
         self.remain_channel = self.next_channel
         self.traffic_timestep = 0
-        self.current_base_station = self.temp_cbs
-        self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 2
+        # self.current_base_station = self.temp_cbs
+        # self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 2
         self.state = self.global_base_stations
         return self.state
 
@@ -148,12 +140,12 @@ class MultiChannelDCAEnv(gym.Env):
                     x = x + 40
                     self.viewer.add_geom(bs)
                 y = y - 40
-            label = pyglet.text.Label('Hello, world',
-                                    font_name='Times New Roman',
-                                    font_size=36,
-                                    x=20, y=20,
-                                    anchor_x='center', anchor_y='center')
-            label.draw()
+            # label = pyglet.text.Label('Hello, world',
+            #                         font_name='Times New Roman',
+            #                         font_size=36,
+            #                         x=20, y=20,
+            #                         anchor_x='center', anchor_y='center')
+            # label.draw()
             # self.viewer.add_geom(DrawText(label))
         return self.viewer.render(return_rgb_array = mode=='rgb_array')
 

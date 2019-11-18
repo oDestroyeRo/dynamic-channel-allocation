@@ -11,7 +11,7 @@ class SingleChannelDCAEnv(gym.Env):
         self.row = 7
         self.col = 7
         self.channels = 35
-        self.global_base_stations = np.empty([self.row, self.col, self.channels], dtype=int)
+        self.global_base_stations = np.zeros([self.row, self.col, self.channels], dtype=int)
         self.current_base_station = np.random.randint(self.col, size=(1, 2))
         self.reward = 0
         self.timestep = 0

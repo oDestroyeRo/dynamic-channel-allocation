@@ -12,7 +12,7 @@ class DQNAgent():
         self.memory = []
         self.memory_size = 900000
         # discount rate
-        self.gamma = 0.95
+        self.gamma = 0.99
 
         # initially 90% exploration, 10% exploitation
         self.epsilon = 1.0
@@ -23,8 +23,7 @@ class DQNAgent():
 
 
         # Q Network for training
-        n_inputs = state_space.shape
-
+        n_inputs = state_space.shape[0]
         n_outputs = action_space.n
         policy = Policy()
 
@@ -49,20 +48,6 @@ class DQNAgent():
         else:
             print("-------------DQN------------")
 
-    
-    # # Q Network is 256-256-256 MLP
-    # def build_model(self, n_inputs, n_outputs):
-    #     model = Sequential()
-    #     # model.add(Embedding(n_inputs, 10, input_length=1))
-    #     # model.add(Reshape((10,)))
-    #     model.add(Conv2D(32, 2, strides=(1, 1), activation='relu', input_shape=n_inputs, padding="valid", data_format="channels_last"))
-    #     model.add(Conv2D(64, 2, strides=(1, 1), activation='relu', padding="valid", input_shape=n_inputs, data_format="channels_last"))
-    #     model.add(Conv2D(64, 2, strides=(1, 1), activation='relu', padding="valid", input_shape=n_inputs, data_format="channels_last"))
-    #     model.add(Flatten())
-    #     model.add(Dense(256, activation='relu'))
-    #     model.add(Dense(n_outputs, activation='linear', name='action'))
-    #     model.summary()
-    #     return model
 
 
     # save Q Network params to a file
@@ -153,7 +138,7 @@ class DQNAgent():
         self.update_epsilon()
 
         # copy new params on old target after every 10 training updates
-        if self.replay_counter % 10 == 0:
+        if self.replay_counter % 5 == 0:
             self.update_weights()
 
         self.replay_counter += 1

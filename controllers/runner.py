@@ -6,9 +6,11 @@ import DCA_env
 from datetime import datetime
 from tqdm import tqdm
 from stable_baselines.common.policies import MlpPolicy, CnnPolicy
+# from stable_baselines.deepq.policies import MlpPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
-from stable_baselines import PPO2
+from stable_baselines import PPO2, HER, DQN, SAC, DDPG, TD3, ACKTR, ACER, A2C, TRPO
 from stable_baselines.bench import Monitor
+import tensorflow as tf
 
 
 
@@ -67,15 +69,16 @@ class SingleChannelRunner:
 class MultiChannelPPORunner:
     def __init__(self, args):
         import os
-        os.environ["CUDA_VISIBLE_DEVICES"]="1"
+        os.environ["CUDA_VISIBLE_DEVICES"]="0"
         self.args = args
         self.log_dir = "tmp/"
     def train(self):
+        # policy_kwargs = dict(act_fun=tf.nn.relu, net_arch=[256, 256])
         env = gym.make('multi-channel-DCA-v0')
         env = Monitor(env, self.log_dir)
         env = DummyVecEnv([lambda: env])
-        model = PPO2(MlpPolicy, env, verbose=1)
-        model.learn(total_timesteps=99999999)
+        model = TRPO(MlpPolicy, env, verbose=1)
+        model.learn(total_timesteps=1000000000)
         model.save(self.log_dir + "ppo2_multi")
 
     def test(self):
@@ -114,7 +117,7 @@ class MultiChannelPPORunner:
 class MultiChannelRunner:
     def __init__(self, args):
         import os
-        os.environ["CUDA_VISIBLE_DEVICES"]="1"
+        os.environ["CUDA_VISIBLE_DEVICES"]="0"
         self.args = args
 
     def train(self):

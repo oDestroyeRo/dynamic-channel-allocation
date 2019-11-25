@@ -22,15 +22,3 @@ class Policy:
         model.summary()
         return model
 
-
-    # def multi_channel_build_model(self, n_inputs, n_outputs):
-    #     model = Sequential()
-    #     # n_inputs = np.expand_dims(n_inputs, 0)
-    #     model.add(Conv2D(32, 2, strides=(1, 1), activation='relu', input_shape=n_inputs, padding="valid", data_format="channels_last"))
-    #     model.add(Conv2D(64, 2, strides=(1, 1), activation='relu', padding="valid", data_format="channels_last"))
-    #     model.add(Conv2D(64, 2, strides=(1, 1), activation='relu', padding="valid", data_format="channels_last"))
-    #     model.add(Flatten())
-    #     model.add(Dense(128, activation='relu'))
-    #     model.add(Dense(n_outputs, activation='linear', name='action'))
-    #     model.summary()
-    #     return model

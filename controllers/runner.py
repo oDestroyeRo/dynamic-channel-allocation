@@ -77,7 +77,7 @@ class MultiChannelPPORunner:
         env = gym.make('multi-channel-DCA-v0')
         env = Monitor(env, self.log_dir)
         env = DummyVecEnv([lambda: env])
-        model = TRPO(MlpPolicy, env, verbose=1)
+        model = PPO2(MlpPolicy, env, verbose=1)
         model.learn(total_timesteps=1000000000)
         model.save(self.log_dir + "ppo2_multi")
 
@@ -144,7 +144,7 @@ class MultiChannelRunner:
             done = False
             while not done:
                 action = agent.act(state)
-                next_state, reward, done, _ = env.step(action)
+                next_state, reward, done, info = env.step(action)
                 timestamp = env.get_timestamp()
                 if (timestamp > max_timestamp):
                     max_timestamp = timestamp
@@ -155,16 +155,16 @@ class MultiChannelRunner:
                 state = next_state
                 total_reward += reward
                 count += 1
-            total_block_prob += env.get_blockprob()
-            if episode%100 == 0:
+            total_block_prob += float(info['blockprob'])
+            if episode%5 == 0:
                 #print(count, env.get_blockprop(), agent.epsilon, total_reward)
                 with open('results/dqn_35_multi_channel_real_traffic.csv', 'a') as newFile:
                     newFileWriter = csv.writer(newFile)
-                    newFileWriter.writerow([count, total_block_prob/100, total_reward/100, agent.epsilon, datetime.utcfromtimestamp(max_timestamp).strftime('%Y-%m-%d %H:%M:%S')])
+                    newFileWriter.writerow([count, total_block_prob/5, total_reward/5, agent.epsilon, datetime.utcfromtimestamp(max_timestamp).strftime('%Y-%m-%d %H:%M:%S')])
                 total_reward = 0
                 total_block_prob = 0
-                env.blocktimes = 0
-                env.timestep = 1
+                # env.blocktimes = 0
+                # env.timestep = 1
             # call experience relay
             if len(agent.memory) >= batch_size:
                 agent.replay(batch_size)

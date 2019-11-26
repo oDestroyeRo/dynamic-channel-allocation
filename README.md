@@ -3,7 +3,10 @@
 Requirement
 
 - python3
-- keras & tensorflow
+- tensorflow == 1.14.0
+- keras
 - gym
 
+> cd DCA_env
+> pip3 install -e .
 > python3 main.py --channel multi

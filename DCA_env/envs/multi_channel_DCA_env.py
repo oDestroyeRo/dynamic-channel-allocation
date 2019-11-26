@@ -18,7 +18,7 @@ class MultiChannelDCAEnv(gym.Env):
         self.traffic_channel = 1000
         self.channels = np.max(self.traffic_data[:,:,:,1]) / self.traffic_channel
         self.channels = math.ceil(self.channels)
-        self.channels = int(self.channels/2)
+        self.channels = int(self.channels) // 2
 
         self.global_base_stations = np.zeros([self.row ,self.col ,self.channels], dtype=np.uint8)
         # self.current_base_station = np.random.randint(self.col, size=(1, 2))
@@ -46,14 +46,8 @@ class MultiChannelDCAEnv(gym.Env):
         self.array_render = np.zeros([self.row, self.col], dtype=object)
 
 
-        self.interation = 0
+        # self.interation = 0
 
-    
-    def encode(self, row, col):
-        i = row
-        i *= self.row
-        i += col
-        return i
 
     
     def check_dca(self, action):
@@ -90,67 +84,109 @@ class MultiChannelDCAEnv(gym.Env):
             return False
         return True
 
+    def check_channel_avalable(self):
+        c_bs_r = self.current_base_station[0][0] 
+        c_bs_c = self.current_base_station[0][1]
+
+        used_channel = np.zeros((self.channels,), dtype=int)
+        result = np.array(np.where(self.global_base_stations[c_bs_r][c_bs_c] == 1))[0,:]
+        if c_bs_r != 0:
+            result = np.append(np.array(np.where(self.global_base_stations[c_bs_r-1][c_bs_c] == 1))[0,:],result)
+        if c_bs_r != self.row-1:
+            result = np.append(np.array(np.where(self.global_base_stations[c_bs_r+1][c_bs_c] == 1))[0,:],result)
+        if c_bs_c != 0:
+            result = np.append(np.array(np.where(self.global_base_stations[c_bs_r][c_bs_c-1] == 1))[0,:],result)
+        if c_bs_c != self.col-1:
+            result = np.append(np.array(np.where(self.global_base_stations[c_bs_r][c_bs_c+1] == 1))[0,:],result)
+        if c_bs_r != self.row-1 and c_bs_c != 0:
+            result = np.append(np.array(np.where(self.global_base_stations[c_bs_r+1][c_bs_c-1] == 1))[0,:],result)
+        if c_bs_r != 0 and c_bs_c != self.col-1:
+            result = np.append(np.array(np.where(self.global_base_stations[c_bs_r-1][c_bs_c+1] == 1))[0,:],result)
+        used_channel[np.unique(result)] = 1
+        if np.sum(used_channel) >= self.channels:
+            # print(np.sum(used_channel))
+            return False
+        return True
+
     def step(self, action):
-        done = False
+        self.done = False
         if self.check_dca(action):
-            self.reward = +10
+            self.reward = 0
             self.remain_channel -= 1
             # self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 0
             self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][action] = 1
             if self.remain_channel == 0:
-                # self.current_base_station[0][0] += 1
-                self.current_base_station[0][1] += 1
-                if self.current_base_station[0][1] >= self.col:
-                    self.current_base_station[0][0] += 1
-                    if self.current_base_station[0][0] >= self.row and self.current_base_station[0][1] >= self.col:
-                        self.traffic_timestep += 1
-                        self.get_timestamp()
-                        if self.traffic_timestep >= self.traffic_data.shape[0]:
-                            self.reward = 0.0
-                            done = True
-                    self.current_base_station[0][1] = 0
-                    if self.current_base_station[0][0] >= self.row:
-                        self.current_base_station[0][0] = 0
-                        self.global_base_stations = np.zeros([self.row, self.col, self.channels], dtype=int)
-                self.next_channel = math.ceil(self.traffic_data[ self.traffic_timestep, self.current_base_station[0][0], self.current_base_station[0][1], 1] / self.traffic_channel)
-                self.remain_channel = self.next_channel
-            else:
                 self.reward = +1
-            self.timestep +=1
+                # self.current_base_station[0][0] += 1
+                self.next_bs()
+            # else:
+            #     self.reward = -1 
+            # self.timestep +=1
                 
             # self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 2
             # done = False
+            # print(self.timestep)
+            # print(self.check_channel_avalable())
+            # print(self.channels)
         else:
-            self.timestep +=1
-            self.reward = -1
-            self.blocktimes +=1
-            done = False
+            # self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][action] = 2
+            # self.timestep +=1
+            if not self.check_channel_avalable():
+                self.next_bs()
+                self.reward = -1
+            else:
+                self.reward = -10
+                self.blocktimes +=1
+                self.done = False
+            # self.remain_channel -= 1
             # self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][action] = 0
-            self.current_base_station[0][1] += 1
-            if self.current_base_station[0][1] >= self.col:
-                self.current_base_station[0][0] += 1
-                if self.current_base_station[0][0] >= self.row and self.current_base_station[0][1] >= self.col:
-                    self.traffic_timestep += 1
-                    self.get_timestamp()
-                    if self.traffic_timestep >= self.traffic_data.shape[0]:
-                        self.reward = 0
-                        done = True
-                self.current_base_station[0][1] = 0
-                if self.current_base_station[0][0] >= self.row:
-                    self.current_base_station[0][0] = 0
-                    self.global_base_stations = np.zeros([self.row, self.col, self.channels], dtype=np.uint8)
-            self.next_channel = math.ceil(self.traffic_data[ self.traffic_timestep, self.current_base_station[0][0], self.current_base_station[0][1], 1] / self.traffic_channel)
-            self.remain_channel = self.next_channel
-        # print(self.current_base_station)
-        self.interation += 1
-        if self.interation >= 2000:
-            done = True
-            reward = 0
+            # if self.remain_channel == 0:
+            #     # self.current_base_station[0][0] += 1
+            #     self.current_base_station[0][1] += 1
+            #     if self.current_base_station[0][1] >= self.col:
+            #         self.current_base_station[0][0] += 1
+            #         if self.current_base_station[0][0] >= self.row and self.current_base_station[0][1] >= self.col:
+            #             self.traffic_timestep += 1
+            #             self.get_timestamp()
+            #             if self.traffic_timestep >= self.traffic_data.shape[0]:
+            #                 self.reward = 0.0
+            #                 done = True
+            #         self.current_base_station[0][1] = 0
+            #         if self.current_base_station[0][0] >= self.row:
+            #             self.current_base_station[0][0] = 0
+            #             self.global_base_stations = np.zeros([self.row, self.col, self.channels], dtype=int)
+            #     self.next_channel = math.ceil(self.traffic_data[ self.traffic_timestep, self.current_base_station[0][0], self.current_base_station[0][1], 1] / self.traffic_channel)
+            #     self.remain_channel = self.next_channel
+        # self.interation += 1
+        print(self.timestep, action, self.check_channel_avalable(), self.current_base_station, self.blocktimes)
+        self.timestep +=1
+        if self.timestep >= 1000:
+            self.done = True
+            self.reward = 0
+            # print(self.get_blockprob())
         self.state = self.global_base_stations
 
         self.state = np.reshape(self.state, (self.row * self.col * self.channels, ))
         # self.state = np.append(self.state, self.encode(self.current_base_station[0,0], self.current_base_station[0,1]))
-        return self.state, self.reward, done, {'blockprob' : self.get_blockprob()}
+        return self.state, self.reward, self.done, {'blockprob' : self.get_blockprob()}
+
+    def next_bs(self):
+        self.current_base_station[0][1] += 1
+        if self.current_base_station[0][1] >= self.col:
+            self.current_base_station[0][0] += 1
+            if self.current_base_station[0][0] >= self.row and self.current_base_station[0][1] >= self.col:
+                self.traffic_timestep += 1
+                self.get_timestamp()
+                if self.traffic_timestep >= self.traffic_data.shape[0]:
+                    self.reward = 0.0
+                    self.done = True
+            self.current_base_station[0][1] = 0
+            if self.current_base_station[0][0] >= self.row:
+                self.current_base_station[0][0] = 0
+                self.global_base_stations = np.zeros([self.row, self.col, self.channels], dtype=int)
+        self.next_channel = math.ceil(self.traffic_data[ self.traffic_timestep, self.current_base_station[0][0], self.current_base_station[0][1], 1] / self.traffic_channel)
+        self.remain_channel = self.next_channel
+        self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 0
 
     def get_blockprob(self):
         return self.blocktimes/self.timestep
@@ -160,7 +196,10 @@ class MultiChannelDCAEnv(gym.Env):
         return self.timestamp
 
     def reset(self):
-        self.interation = 0
+        # print("reset")
+        self.timestep = 1
+        self.blocktimes = 0
+        # self.interation = 0
         # self.global_base_stations = self.temp_gbs
         self.current_base_station = np.array([[0,0]])
         # self.current_base_station = np.random.randint(self.col, size=(1, 2))

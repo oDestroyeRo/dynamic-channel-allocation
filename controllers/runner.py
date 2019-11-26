@@ -11,6 +11,7 @@ from stable_baselines.common.vec_env import DummyVecEnv
 from stable_baselines import PPO2, HER, DQN, SAC, DDPG, TD3, ACKTR, ACER, A2C, TRPO
 from stable_baselines.bench import Monitor
 import tensorflow as tf
+from gym.wrappers import Monitor
 
 
 
@@ -69,7 +70,7 @@ class SingleChannelRunner:
 class MultiChannelPPORunner:
     def __init__(self, args):
         import os
-        os.environ["CUDA_VISIBLE_DEVICES"]="0"
+        os.environ["CUDA_VISIBLE_DEVICES"]="1"
         self.args = args
         self.log_dir = "tmp/"
     def train(self):
@@ -117,11 +118,12 @@ class MultiChannelPPORunner:
 class MultiChannelRunner:
     def __init__(self, args):
         import os
-        os.environ["CUDA_VISIBLE_DEVICES"]="0"
+        os.environ["CUDA_VISIBLE_DEVICES"]="1"
         self.args = args
 
     def train(self):
         env = gym.make('multi-channel-DCA-v0')
+        env = Monitor(env, './results/videos', force=True)
         state_size = env.observation_space
         action_size = env.action_space
 
@@ -143,6 +145,7 @@ class MultiChannelRunner:
             state = np.expand_dims(state, 0)
             done = False
             while not done:
+                env.render()
                 action = agent.act(state)
                 next_state, reward, done, info = env.step(action)
                 timestamp = env.get_timestamp()

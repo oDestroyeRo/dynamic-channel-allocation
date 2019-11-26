@@ -235,7 +235,7 @@ class MultiChannelDCAEnv(gym.Env):
                 x = 30 + i * 20
                 for j in range(self.col):
                     bs = rendering.make_polygon([(x,y),(x-20,y-13),(x-20,y-40),(x-0,y-53),(x+20,y-40),(x+20,y-13),(x-0,y-0)], False)
-                    label = pyglet.text.Label(str(np.sum(self.global_base_stations[i,j,:])),
+                    label = pyglet.text.Label(str(self.channels - np.sum(self.global_base_stations[i,j,:])),
                                     font_size=10,
                                     x=x-5, y=y-25,
                                     anchor_x='left', anchor_y='center', color=(255, 0, 0, 255))

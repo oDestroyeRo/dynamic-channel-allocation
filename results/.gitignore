@@ -1,4 +1,6 @@
-/plaidml-venv
 /.vscode
 .DS_Store
-/tmp
+d*
+p*
+b*
+r*

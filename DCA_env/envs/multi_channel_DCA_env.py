@@ -165,7 +165,7 @@ class MultiChannelDCAEnv(gym.Env):
             #     self.next_channel = math.ceil(self.traffic_data[ self.traffic_timestep, self.current_base_station[0][0], self.current_base_station[0][1], 1] / self.traffic_channel)
             #     self.remain_channel = self.next_channel
         # self.interation += 1
-        print(self.timestep, action, self.check_channel_avalable(), self.current_base_station, self.blocktimes)
+        # print(self.timestep, action, self.check_channel_avalable(), self.current_base_station, self.blocktimes)
         self.timestep +=1
         if self.timestep >= 1000:
             self.done = True
@@ -235,7 +235,7 @@ class MultiChannelDCAEnv(gym.Env):
                 x = 30 + i * 20
                 for j in range(self.col):
                     bs = rendering.make_polygon([(x,y),(x-20,y-13),(x-20,y-40),(x-0,y-53),(x+20,y-40),(x+20,y-13),(x-0,y-0)], False)
-                    label = pyglet.text.Label(str(self.channels - np.sum(self.global_base_stations[i,j,:])),
+                    label = pyglet.text.Label(str(int(self.channels - np.sum(self.global_base_stations[i,j,:]))),
                                     font_size=10,
                                     x=x-5, y=y-25,
                                     anchor_x='left', anchor_y='center', color=(255, 0, 0, 255))
@@ -252,7 +252,7 @@ class MultiChannelDCAEnv(gym.Env):
         else:
             for i in range(self.row):
                 for j in range(self.col):
-                    self.array_render[i,j].text = str(self.channels - np.sum(self.global_base_stations[i,j,:]))
+                    self.array_render[i,j].text = str(int(self.channels - np.sum(self.global_base_stations[i,j,:])))
             self.timestamp_label.text = str(datetime.utcfromtimestamp(self.timestamp).strftime('%Y-%m-%d %H:%M:%S'))
         return self.viewer.render(return_rgb_array = mode=='rgb_array')
 

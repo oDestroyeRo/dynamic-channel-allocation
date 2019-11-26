@@ -252,7 +252,7 @@ class MultiChannelDCAEnv(gym.Env):
         else:
             for i in range(self.row):
                 for j in range(self.col):
-                    self.array_render[i,j].text = str(np.sum(self.global_base_stations[i,j,:]))
+                    self.array_render[i,j].text = str(self.channels - np.sum(self.global_base_stations[i,j,:]))
             self.timestamp_label.text = str(datetime.utcfromtimestamp(self.timestamp).strftime('%Y-%m-%d %H:%M:%S'))
         return self.viewer.render(return_rgb_array = mode=='rgb_array')
 

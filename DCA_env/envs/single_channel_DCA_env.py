@@ -29,7 +29,7 @@ class SingleChannelDCAEnv(gym.Env):
         self.temp_gbs = self.global_base_stations 
         self.action_space = spaces.Discrete(self.channels)
         # self.observation_space = spaces.Discrete(self.row * self.col)
-        self.observation_space = spaces.Box(low=0, high=1, shape=(self.row ,self.col ,self.channels), dtype=np.uint8)
+        self.observation_space = spaces.Box(low=0, high=1, shape=(self.row * self.col * self.channels, ), dtype=np.uint8)
 
         self.viewer = None
         self.seed()
@@ -40,7 +40,8 @@ class SingleChannelDCAEnv(gym.Env):
     def check_dca(self, action):
         c_bs_r = self.current_base_station[0][0] 
         c_bs_c = self.current_base_station[0][1]
-
+        if self.global_base_stations[c_bs_r][c_bs_c][action] == 1:
+            return False
         if c_bs_r != 0 and self.global_base_stations[c_bs_r-1][c_bs_c][action] == 1:
             return False
         if c_bs_r != self.row-1 and self.global_base_stations[c_bs_r+1][c_bs_c][action] == 1:
@@ -58,7 +59,7 @@ class SingleChannelDCAEnv(gym.Env):
     def step(self, action):
         done = False
         if self.check_dca(action):
-            self.reward = 1
+            self.reward = +1
 
             self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 0
             self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][action] = 1
@@ -76,18 +77,21 @@ class SingleChannelDCAEnv(gym.Env):
             # self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 2
             self.duptimes = 0
             done = False
-            self.timestep +=1
         else:
-            self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 0
-            self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][action] = 1
-            self.reward = 0
+            # self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 0
+            # self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][action] = 1
+            self.reward = -10
 
             self.blocktimes +=1
-            done = True
-            self.timestep +=1
+            # done = True
 
+
+        self.timestep +=1
+        if self.timestep >= self.row * self.col:
+            done = True
+            self.reward = 0
         self.state = self.global_base_stations
-        # self.state = np.reshape(self.state, (self.row * self.col * self.channels, ))
+        self.state = np.reshape(self.state, (self.row * self.col * self.channels, ))
 
         return self.state, self.reward, done, {}
 
@@ -101,7 +105,7 @@ class SingleChannelDCAEnv(gym.Env):
         self.current_base_station = np.random.randint(self.col, size=(1, 2))
         # self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 2
         self.state = self.global_base_stations
-        # self.state = np.reshape(self.state, (self.row * self.col * self.channels, ))
+        self.state = np.reshape(self.state, (self.row * self.col * self.channels, ))
         return self.state
 
     def render(self, mode='human'):

@@ -6,7 +6,7 @@ from models.policy import Policy
 
 
 class DQNAgent():
-    def __init__(self, state_space, action_space, args, episodes=100000):
+    def __init__(self, state_space, action_space, args, episodes=10000):
         self.action_space = action_space
         # experience buffer
         self.memory = []
@@ -35,7 +35,7 @@ class DQNAgent():
             self.target_q_model = policy.multi_channel_build_model(n_inputs, n_outputs)
             self.q_model = policy.multi_channel_build_model(n_inputs, n_outputs)
 
-        self.q_model.compile(loss='mse', optimizer=Adam(),
+        self.q_model.compile(loss='mse', optimizer=Adam(lr=0.025),
                            metrics=["accuracy"])
 
         # copy Q Network params to target Q Network

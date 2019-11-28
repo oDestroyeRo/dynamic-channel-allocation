@@ -4,6 +4,8 @@ import csv
 from models.DQN import DQNAgent
 import DCA_env
 from datetime import datetime
+import pytz
+from pytz import timezone
 from tqdm import tqdm
 from stable_baselines.common.policies import MlpPolicy, CnnPolicy
 # from stable_baselines.deepq.policies import MlpPolicy
@@ -11,9 +13,8 @@ from stable_baselines.common.vec_env import DummyVecEnv
 from stable_baselines import PPO2, HER, DQN, SAC, DDPG, TD3, ACKTR, ACER, A2C, TRPO
 from stable_baselines.bench import Monitor
 import tensorflow as tf
-from gym.wrappers import Monitor
 
-
+la = timezone("CET")
 
 class SingleChannelRunner:
     def __init__(self, args):
@@ -108,7 +109,7 @@ class MultiChannelPPORunner:
             if episode%100 == 0:
                 with open('results/ppo_35_multi_channel_real_traffic.csv', 'a') as newFile:
                     newFileWriter = csv.writer(newFile)
-                    newFileWriter.writerow([count, total_block_prob/100, total_reward/100, datetime.utcfromtimestamp(max_timestamp).strftime('%Y-%m-%d %H:%M:%S')])
+                    newFileWriter.writerow([count, total_block_prob/100, total_reward/100, datetime.fromtimestamp(max_timestamp, la).strftime('%Y-%m-%d %H:%M:%S')])
                 total_reward = 0
                 total_block_prob = 0
                 env.blocktimes = 0
@@ -123,7 +124,7 @@ class MultiChannelRunner:
 
     def train(self):
         env = gym.make('multi-channel-DCA-v0')
-        env = Monitor(env, './results/videos', force=True)
+        # env = Monitor(env, './results/videos', force=True)
         state_size = env.observation_space
         action_size = env.action_space
 
@@ -132,7 +133,7 @@ class MultiChannelRunner:
         # should be solved in this number of episodes
         episode_count = 1000000
 
-        batch_size = 64
+        batch_size = 128
 
         count = 0
         total_reward = 0
@@ -145,7 +146,6 @@ class MultiChannelRunner:
             state = np.expand_dims(state, 0)
             done = False
             while not done:
-                env.render()
                 action = agent.act(state)
                 next_state, reward, done, info = env.step(action)
                 timestamp = env.get_timestamp()
@@ -163,9 +163,10 @@ class MultiChannelRunner:
                 #print(count, env.get_blockprop(), agent.epsilon, total_reward)
                 with open('results/dqn_35_multi_channel_real_traffic.csv', 'a') as newFile:
                     newFileWriter = csv.writer(newFile)
-                    newFileWriter.writerow([count, total_block_prob/5, total_reward/5, agent.epsilon, datetime.utcfromtimestamp(max_timestamp).strftime('%Y-%m-%d %H:%M:%S')])
+                    newFileWriter.writerow([count, total_block_prob/5, total_reward/5, agent.epsilon, datetime.fromtimestamp(max_timestamp, la).strftime('%Y-%m-%d %H:%M:%S')])
                 total_reward = 0
                 total_block_prob = 0
+                max_timestamp = 0
                 # env.blocktimes = 0
                 # env.timestep = 1
             # call experience relay

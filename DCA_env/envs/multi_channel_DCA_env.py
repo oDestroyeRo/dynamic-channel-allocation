@@ -6,13 +6,12 @@ import pyglet
 import math
 import pyglet
 from datetime import datetime
+from pytz import timezone
+import pytz
 # from multi_discrete import MultiDiscrete
 
-class DrawText:
-    def __init__(self, label:pyglet.text.Label):
-        self.label=label
-    def render(self):
-        self.label.draw()
+la = timezone("CET")
+
 
 class MultiChannelDCAEnv(gym.Env):
 
@@ -27,10 +26,11 @@ class MultiChannelDCAEnv(gym.Env):
         self.channels = math.ceil(self.channels)
         self.channels = int(self.channels) // 2
 
-        self.global_base_stations = np.zeros([self.row ,self.col ,self.channels], dtype=np.uint8)
+        self.global_base_stations = np.zeros([self.row ,self.col ,self.channels, 2], dtype=np.uint8)
         # self.current_base_station = np.random.randint(self.col, size=(1, 2))
         self.current_base_station = np.array([[0,0]])
         # self.temp_cbs = self.current_base_station
+        self.bs_assign = 0
         self.reward = 0
         self.timestep = 1
         self.blocktimes = 0
@@ -45,7 +45,7 @@ class MultiChannelDCAEnv(gym.Env):
         self.action_space = spaces.Discrete(self.channels)
         # self.observation_space = spaces.Discrete(self.row * self.col)
         self.position = 1
-        self.observation_space = spaces.Box(low=0, high=1, shape=(self.row *self.col *self.channels, ), dtype=np.uint8)
+        self.observation_space = spaces.Box(low=0, high=255, shape=(self.row *self.col *self.channels *2, ), dtype=np.uint16)
 
         self.viewer = None
         self.seed()
@@ -60,32 +60,31 @@ class MultiChannelDCAEnv(gym.Env):
     def check_dca(self, action):
         c_bs_r = self.current_base_station[0][0] 
         c_bs_c = self.current_base_station[0][1]
-
-        if self.global_base_stations[c_bs_r][c_bs_c][action] == 1:
+        if self.global_base_stations[c_bs_r][c_bs_c][action][0] == 255:
             # print(1)
             # print(self.current_base_station)
             return False
-        if c_bs_r != 0 and self.global_base_stations[c_bs_r-1][c_bs_c][action] == 1:
+        if c_bs_r != 0 and self.global_base_stations[c_bs_r-1][c_bs_c][action][0] == 255:
             # print(2)
             # print(self.current_base_station)
             return False
-        if c_bs_r != self.row-1 and self.global_base_stations[c_bs_r+1][c_bs_c][action] == 1:
+        if c_bs_r != self.row-1 and self.global_base_stations[c_bs_r+1][c_bs_c][action][0] == 255:
             # print(3)
             # print(self.current_base_station)
             return False
-        if c_bs_c != 0 and self.global_base_stations[c_bs_r][c_bs_c-1][action] == 1:
+        if c_bs_c != 0 and self.global_base_stations[c_bs_r][c_bs_c-1][action][0] == 255:
             # print(4)
             # print(self.current_base_station)
             return False
-        if c_bs_c != self.col-1 and self.global_base_stations[c_bs_r][c_bs_c+1][action] == 1:
+        if c_bs_c != self.col-1 and self.global_base_stations[c_bs_r][c_bs_c+1][action][0] == 255:
             # print(5)
             # print(self.current_base_station)
             return False
-        if c_bs_r != self.row-1 and c_bs_c != 0 and self.global_base_stations[c_bs_r+1][c_bs_c-1][action] == 1:
+        if c_bs_r != self.row-1 and c_bs_c != 0 and self.global_base_stations[c_bs_r+1][c_bs_c-1][action][0] == 255:
             # print(6)
             # print(self.current_base_station)
             return False
-        if c_bs_r != 0 and c_bs_c != self.col-1 and self.global_base_stations[c_bs_r-1][c_bs_c+1][action] == 1:
+        if c_bs_r != 0 and c_bs_c != self.col-1 and self.global_base_stations[c_bs_r-1][c_bs_c+1][action][0] == 255:
             # print(7)
             # print(self.current_base_station)
             return False
@@ -96,19 +95,19 @@ class MultiChannelDCAEnv(gym.Env):
         c_bs_c = self.current_base_station[0][1]
 
         used_channel = np.zeros((self.channels,), dtype=int)
-        result = np.array(np.where(self.global_base_stations[c_bs_r][c_bs_c] == 1))[0,:]
+        result = np.array(np.where(self.global_base_stations[c_bs_r][c_bs_c] == 255))[0,:]
         if c_bs_r != 0:
-            result = np.append(np.array(np.where(self.global_base_stations[c_bs_r-1][c_bs_c] == 1))[0,:],result)
+            result = np.append(np.array(np.where(self.global_base_stations[c_bs_r-1][c_bs_c] == 255))[0,:],result)
         if c_bs_r != self.row-1:
-            result = np.append(np.array(np.where(self.global_base_stations[c_bs_r+1][c_bs_c] == 1))[0,:],result)
+            result = np.append(np.array(np.where(self.global_base_stations[c_bs_r+1][c_bs_c] == 255))[0,:],result)
         if c_bs_c != 0:
-            result = np.append(np.array(np.where(self.global_base_stations[c_bs_r][c_bs_c-1] == 1))[0,:],result)
+            result = np.append(np.array(np.where(self.global_base_stations[c_bs_r][c_bs_c-1] == 255))[0,:],result)
         if c_bs_c != self.col-1:
-            result = np.append(np.array(np.where(self.global_base_stations[c_bs_r][c_bs_c+1] == 1))[0,:],result)
+            result = np.append(np.array(np.where(self.global_base_stations[c_bs_r][c_bs_c+1] == 255))[0,:],result)
         if c_bs_r != self.row-1 and c_bs_c != 0:
-            result = np.append(np.array(np.where(self.global_base_stations[c_bs_r+1][c_bs_c-1] == 1))[0,:],result)
+            result = np.append(np.array(np.where(self.global_base_stations[c_bs_r+1][c_bs_c-1] == 255))[0,:],result)
         if c_bs_r != 0 and c_bs_c != self.col-1:
-            result = np.append(np.array(np.where(self.global_base_stations[c_bs_r-1][c_bs_c+1] == 1))[0,:],result)
+            result = np.append(np.array(np.where(self.global_base_stations[c_bs_r-1][c_bs_c+1] == 255))[0,:],result)
         used_channel[np.unique(result)] = 1
         if np.sum(used_channel) >= self.channels:
             # print(np.sum(used_channel))
@@ -121,11 +120,13 @@ class MultiChannelDCAEnv(gym.Env):
             self.reward = 0
             self.remain_channel -= 1
             # self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 0
-            self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][action] = 1
+            self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][action][0] = 255
             if self.remain_channel == 0:
                 self.reward = +1
                 # self.current_base_station[0][0] += 1
                 self.next_bs()
+                self.bs_assign += 1
+
             # else:
             #     self.reward = -1 
             # self.timestep +=1
@@ -140,11 +141,14 @@ class MultiChannelDCAEnv(gym.Env):
             # self.timestep +=1
             if not self.check_channel_avalable():
                 self.next_bs()
-                self.reward = -1
+                self.reward = 0
             else:
-                self.reward = -10
+                self.reward = -1
                 self.blocktimes +=1
                 self.done = False
+                self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][action][1] += 1
+                if  self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][action][1] >= 255:
+                    self.done = True
             # self.remain_channel -= 1
             # self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][action] = 0
             # if self.remain_channel == 0:
@@ -167,17 +171,18 @@ class MultiChannelDCAEnv(gym.Env):
         # self.interation += 1
         # print(self.timestep, action, self.check_channel_avalable(), self.current_base_station, self.blocktimes)
         self.timestep +=1
-        if self.timestep >= 1000:
+        if self.bs_assign >= self.row + self.col:
             self.done = True
             self.reward = 0
             # print(self.get_blockprob())
         self.state = self.global_base_stations
 
-        self.state = np.reshape(self.state, (self.row * self.col * self.channels, ))
+        self.state = np.reshape(self.state, (self.row * self.col * self.channels * 2, ))
         # self.state = np.append(self.state, self.encode(self.current_base_station[0,0], self.current_base_station[0,1]))
         return self.state, self.reward, self.done, {'blockprob' : self.get_blockprob()}
 
     def next_bs(self):
+        self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][:][1] = 0
         self.current_base_station[0][1] += 1
         if self.current_base_station[0][1] >= self.col:
             self.current_base_station[0][0] += 1
@@ -190,12 +195,13 @@ class MultiChannelDCAEnv(gym.Env):
             self.current_base_station[0][1] = 0
             if self.current_base_station[0][0] >= self.row:
                 self.current_base_station[0][0] = 0
-                self.global_base_stations = np.zeros([self.row, self.col, self.channels], dtype=int)
+                # self.global_base_stations = np.zeros([self.row, self.col, self.channels], dtype=int)
         self.next_channel = math.ceil(self.traffic_data[ self.traffic_timestep, self.current_base_station[0][0], self.current_base_station[0][1], 1] / self.traffic_channel)
         self.remain_channel = self.next_channel
         self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 0
 
     def get_blockprob(self):
+        # print(self.blocktimes, self.timestep)
         return self.blocktimes/self.timestep
 
     def get_timestamp(self):
@@ -204,13 +210,14 @@ class MultiChannelDCAEnv(gym.Env):
 
     def reset(self):
         # print("reset")
+        self.bs_assign = 0
         self.timestep = 1
         self.blocktimes = 0
         # self.interation = 0
         # self.global_base_stations = self.temp_gbs
         self.current_base_station = np.array([[0,0]])
         # self.current_base_station = np.random.randint(self.col, size=(1, 2))
-        self.global_base_stations = np.zeros([self.row, self.col, self.channels], dtype=np.uint8)
+        self.global_base_stations = np.zeros([self.row, self.col, self.channels, 2], dtype=np.uint8)
         # self.next_channel = self.temp_nc
         self.reward = 0
         self.next_channel = math.ceil(self.traffic_data[ self.traffic_timestep, self.current_base_station[0][0], self.current_base_station[0][1], 1] / self.traffic_channel)
@@ -219,7 +226,7 @@ class MultiChannelDCAEnv(gym.Env):
         # self.current_base_station = self.temp_cbs
         # self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 2
         self.state = self.global_base_stations
-        self.state = np.reshape(self.state, (self.row * self.col * self.channels, ))
+        self.state = np.reshape(self.state, (self.row * self.col * self.channels * 2, ))
         # self.state = np.append(self.state, self.encode(self.current_base_station[0,0], self.current_base_station[0,1]))
         return self.state
 
@@ -244,7 +251,7 @@ class MultiChannelDCAEnv(gym.Env):
                     x = x + 40
                     self.viewer.add_geom(bs)
                 y = y - 40
-            self.timestamp_label = pyglet.text.Label(str(datetime.utcfromtimestamp(self.timestamp).strftime('%Y-%m-%d %H:%M:%S')),
+            self.timestamp_label = pyglet.text.Label(str(datetime.fromtimestamp(self.timestamp, la).strftime('%Y-%m-%d %H:%M:%S')),
                 font_size=10,
                 x=screen_width-150, y=screen_height - 10,
                 anchor_x='left', anchor_y='center', color=(255,0,255, 255))
@@ -253,7 +260,7 @@ class MultiChannelDCAEnv(gym.Env):
             for i in range(self.row):
                 for j in range(self.col):
                     self.array_render[i,j].text = str(int(self.channels - np.sum(self.global_base_stations[i,j,:])))
-            self.timestamp_label.text = str(datetime.utcfromtimestamp(self.timestamp).strftime('%Y-%m-%d %H:%M:%S'))
+            self.timestamp_label.text = str(datetime.fromtimestamp(self.timestamp, la).strftime('%Y-%m-%d %H:%M:%S'))
         return self.viewer.render(return_rgb_array = mode=='rgb_array')
 
     def close(self):

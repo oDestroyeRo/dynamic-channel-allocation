@@ -49,7 +49,7 @@ class MultiChannelDCAEnv(gym.Env):
         self.viewer = None
         self.seed()
 
-        self.array_render = np.zeros([self.row, self.col], dtype=object)
+        self.array_render =np.zeros([self.row, self.col], dtype=object)
 
 
         # self.interation = 0
@@ -60,32 +60,18 @@ class MultiChannelDCAEnv(gym.Env):
         c_bs_r = self.current_base_station[0][0] 
         c_bs_c = self.current_base_station[0][1]
         if self.global_base_stations[c_bs_r][c_bs_c][action] == 255:
-            # print(1)
-            # print(self.current_base_station)
             return False
         if c_bs_r != 0 and self.global_base_stations[c_bs_r-1][c_bs_c][action] == 255:
-            # print(2)
-            # print(self.current_base_station)
             return False
         if c_bs_r != self.row-1 and self.global_base_stations[c_bs_r+1][c_bs_c][action] == 255:
-            # print(3)
-            # print(self.current_base_station)
             return False
         if c_bs_c != 0 and self.global_base_stations[c_bs_r][c_bs_c-1][action] == 255:
-            # print(4)
-            # print(self.current_base_station)
             return False
         if c_bs_c != self.col-1 and self.global_base_stations[c_bs_r][c_bs_c+1][action] == 255:
-            # print(5)
-            # print(self.current_base_station)
             return False
         if c_bs_r != self.row-1 and c_bs_c != 0 and self.global_base_stations[c_bs_r+1][c_bs_c-1][action] == 255:
-            # print(6)
-            # print(self.current_base_station)
             return False
         if c_bs_r != 0 and c_bs_c != self.col-1 and self.global_base_stations[c_bs_r-1][c_bs_c+1][action] == 255:
-            # print(7)
-            # print(self.current_base_station)
             return False
         return True
 
@@ -116,12 +102,12 @@ class MultiChannelDCAEnv(gym.Env):
     def step(self, action):
         self.done = False
         if self.check_dca(action):
-            self.reward = 0
+            self.reward = 0.1
             self.remain_channel -= 1
             # self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]] = 0
             self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][action] = 255
             if self.remain_channel == 0:
-                self.reward = +1
+                self.reward = 1
                 # self.current_base_station[0][0] += 1
                 self.next_bs()
                 self.bs_assign += 1
@@ -142,9 +128,10 @@ class MultiChannelDCAEnv(gym.Env):
                 self.next_bs()
                 self.reward = 0
             else:
-                self.reward = -1
+                self.reward = -0.5
                 self.blocktimes +=1
                 self.done = False
+                self.next_bs()
             # self.remain_channel -= 1
             # self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][action] = 0
             # if self.remain_channel == 0:

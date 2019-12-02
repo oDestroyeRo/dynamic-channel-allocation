@@ -119,7 +119,7 @@ class MultiChannelPPORunner:
 class MultiChannelRunner:
     def __init__(self, args):
         import os
-        os.environ["CUDA_VISIBLE_DEVICES"]="0"
+        os.environ["CUDA_VISIBLE_DEVICES"]="1"
         self.args = args
 
     def train(self):
@@ -133,7 +133,7 @@ class MultiChannelRunner:
         # should be solved in this number of episodes
         episode_count = 1000000
 
-        batch_size = 128
+        batch_size = 64
 
         count = 0
         total_reward = 0

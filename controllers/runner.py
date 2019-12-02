@@ -19,6 +19,8 @@ la = timezone("CET")
 class SingleChannelRunner:
     def __init__(self, args):
         self.args = args
+        import os
+        os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
     def train(self):
         env = gym.make('single-channel-DCA-v0')
@@ -52,15 +54,13 @@ class SingleChannelRunner:
                 total_reward += reward
                 count += 1
             total_block_prob += env.get_blockprob()
-            if episode%100 == 0:
+            if episode%10 == 0:
                 #print(count, env.get_blockprop(), agent.epsilon, total_reward)
-                with open('results/dqn_35_1_channel.csv', 'a') as newFile:
+                with open('results/dqn_35_1_channel_2.csv', 'a') as newFile:
                     newFileWriter = csv.writer(newFile)
-                    newFileWriter.writerow([count, total_block_prob/100, total_reward/100, agent.epsilon])
+                    newFileWriter.writerow([count, total_block_prob/10, total_reward/10, agent.epsilon])
                 total_reward = 0
                 total_block_prob = 0
-                env.blocktimes = 0
-                env.timestep = 0
             # call experience relay
             if len(agent.memory) >= batch_size:
                 agent.replay(batch_size)

@@ -76,10 +76,10 @@ class MultiChannelPPORunner:
         self.log_dir = "tmp/"
     def train(self):
         # policy_kwargs = dict(act_fun=tf.nn.relu, net_arch=[256, 256])
-        env = gym.make('multi-channel-DCA-v0')
+        env = gym.make('MsPacman-v0')
         env = Monitor(env, self.log_dir)
         env = DummyVecEnv([lambda: env])
-        model = PPO2(MlpPolicy, env, verbose=1)
+        model = PPO2(CnnPolicy, env, verbose=1)
         model.learn(total_timesteps=1000000000)
         model.save(self.log_dir + "ppo2_multi")
 

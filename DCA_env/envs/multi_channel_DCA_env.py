@@ -4,7 +4,6 @@ from gym.utils import seeding
 import numpy as np
 import pyglet
 import math
-import pyglet
 from datetime import datetime
 from pytz import timezone
 import pytz
@@ -231,6 +230,11 @@ class MultiChannelDCAEnv(gym.Env):
         return self.state
 
     def render(self, mode='human'):
+        class DrawText:
+            def __init__(self, label:pyglet.text.Label):	
+                self.label=label	
+            def render(self):	
+                self.label.draw()
         screen_width = 800
         screen_height = 600
         if self.viewer is None:

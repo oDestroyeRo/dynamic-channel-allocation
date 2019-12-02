@@ -10,7 +10,7 @@ class DQNAgent():
         self.action_space = action_space
         # experience buffer
         self.memory = []
-        self.memory_size = 900000
+        self.memory_size = 90000
         # discount rate
         self.gamma = 0.95
 
@@ -23,7 +23,7 @@ class DQNAgent():
 
 
         # Q Network for training
-        n_inputs = state_space.shape[0]
+        n_inputs = state_space.shape
         n_outputs = action_space.n
         policy = Policy()
 
@@ -35,7 +35,7 @@ class DQNAgent():
             self.target_q_model = policy.multi_channel_build_model(n_inputs, n_outputs)
             self.q_model = policy.multi_channel_build_model(n_inputs, n_outputs)
 
-        self.q_model.compile(loss='mse', optimizer=Adam(lr=0.025),
+        self.q_model.compile(loss='mse', optimizer=Adam(),
                            metrics=["accuracy"])
 
         # copy Q Network params to target Q Network

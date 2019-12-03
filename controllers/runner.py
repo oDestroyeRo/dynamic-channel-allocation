@@ -32,7 +32,7 @@ class SingleChannelRunner:
         # should be solved in this number of episodes
         episode_count = 100000000
 
-        batch_size = 64
+        batch_size = 128
 
         count = 0
         total_reward = 0
@@ -56,9 +56,9 @@ class SingleChannelRunner:
             total_block_prob += env.get_blockprob()
             if episode%10 == 0:
                 #print(count, env.get_blockprop(), agent.epsilon, total_reward)
-                with open('results/dqn_35_1_channel_2.csv', 'a') as newFile:
+                with open('results/dqn_35_1_channel_3.csv', 'a') as newFile:
                     newFileWriter = csv.writer(newFile)
-                    newFileWriter.writerow([count, total_block_prob/10, total_reward/10, agent.epsilon])
+                    newFileWriter.writerow([count, total_block_prob/100, total_reward/100, agent.epsilon])
                 total_reward = 0
                 total_block_prob = 0
             # call experience relay

@@ -9,16 +9,27 @@ class SingleChannelDCAEnv(gym.Env):
 
     metadata = {'render.modes': ['human', 'rgb_array']}
     def __init__(self):
-        self.row = 10
-        self.col = 10
-        self.channels = 20
+        self.row = 7
+        self.col = 7
+        self.channels = 10
         self.current_base_station = [[0,0]]
-        self.state = None
+        self.state = np.zeros([self.row, self.col, 3], dtype=int)
 
         self.action_space = spaces.Discrete(self.channels)
-        self.observation_space = spaces.Box(low=0, high=255, shape=(self.row ,self.col, 2), dtype=np.uint8)
+        self.observation_space = spaces.Box(low=0, high=255, shape=(self.row ,self.col, 3), dtype=np.uint8)
         self.viewer = None
         self.seed()
+
+        state = self.state
+        for i in range(self.row):	
+            for j in range(self.col):	
+                action = np.random.randint(0, self.channels)	
+                self.current_base_station[0][0] = i	
+                self.current_base_station[0][1] = j	
+                while self.check_dca(action, state) == False:	
+                    action = np.random.randint(0, self.channels)	
+                state[i,j,0] = action
+        self.temp_state = state
 
 
     
@@ -43,6 +54,7 @@ class SingleChannelDCAEnv(gym.Env):
 
     def next_bs(self, state):
         state[self.current_base_station[0][0]][self.current_base_station[0][1]][1] = 0
+        # self.current_base_station = np.random.randint(self.row, size=(1, 2))
         self.current_base_station[0][1] += 1
         if self.current_base_station[0][1] >= self.col:
             self.current_base_station[0][1] = 0
@@ -50,6 +62,21 @@ class SingleChannelDCAEnv(gym.Env):
             if self.current_base_station[0][0] >= self.row:
                 self.current_base_station[0][0] = 0
         state[self.current_base_station[0][0]][self.current_base_station[0][1]][1] = 255
+        return state
+
+    def pre_bs(self, state):
+        state[self.current_base_station[0][0]][self.current_base_station[0][1]][1] = 0
+        state[self.current_base_station[0][0]][self.current_base_station[0][1]][2] = 0
+        # self.current_base_station = np.random.randint(self.row, size=(1, 2))
+        self.current_base_station[0][1] -= 1
+        if self.current_base_station[0][1] <= 0:
+            self.current_base_station[0][1] = self.row -1
+            self.current_base_station[0][0] -= 1
+            if self.current_base_station[0][0] <= 0:
+                self.current_base_station[0][0] = self.row -1
+        state[self.current_base_station[0][0]][self.current_base_station[0][1]][2] = 255
+        state[self.current_base_station[0][0]][self.current_base_station[0][1]][1] = 255
+        state[self.current_base_station[0][0]][self.current_base_station[0][1]][0] = 255
         return state
 
 
@@ -60,14 +87,16 @@ class SingleChannelDCAEnv(gym.Env):
         if self.check_dca(action, state):
             self.reward = 1
             state[self.current_base_station[0][0]][self.current_base_station[0][1]][0] = action
-            if self.get_blockprob() <= 0.0:
-                state = self.next_bs(state)
+            # if self.get_blockprob() <= 0.0:
 
         else:
             self.reward = -1
+            # state[self.current_base_station[0][0]][self.current_base_station[0][1]][0] = action
             self.blocktimes +=1
-            state = self.next_bs(state)
+            # state = self.pre_bs(state)
+            # state = self.next_bs(state)
         self.timestep +=1
+        state = self.next_bs(state)
         self.state = state
         # self.state = np.reshape(state, (self.row * self.col , ))
         return self.state, self.reward, done, {}
@@ -79,11 +108,14 @@ class SingleChannelDCAEnv(gym.Env):
         self.array_render = np.zeros([self.row, self.col], dtype=object)
         self.blocktimes = 0
         self.timestep = 1
-        state = np.zeros([self.row, self.col, 2], dtype=int)
-        for i in range(self.row):
-            for j in range(self.col):
-                state[i][j][0] = self.channels + 1
+        state = self.temp_state
+        # for i in range(self.row):
+        #     for j in range(self.col):
+        #         state[i][j][0] = self.channels + 1
+
+        
         self.current_base_station = [[0,0]]
+        # self.current_base_station = np.random.randint(self.row, size=(1, 2))
         state[self.current_base_station[0][0]][self.current_base_station[0][1]][1] = 255
         self.state = state
         # self.state = np.reshape(state, (self.row * self.col, ))

@@ -10,7 +10,7 @@ class DQNAgent():
         self.action_space = action_space
         # experience buffer
         self.memory = []
-        self.memory_size = 90000
+        self.memory_size = 10000
         # discount rate
         self.gamma = 0.95
 
@@ -138,7 +138,7 @@ class DQNAgent():
         self.update_epsilon()
 
         # copy new params on old target after every 10 training updates
-        if self.replay_counter % 100 == 0:
+        if self.replay_counter % 5 == 0:
             self.update_weights()
 
         self.replay_counter += 1

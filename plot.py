@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-datas = pd.read_csv('results/dqn_35_1_channel_2.csv', names=["step", "block_prob", "reward", "", " "])
+datas = pd.read_csv('results/dqn_35_1_channel_3.csv', names=["step", "block_prob", "reward", "", " "])
 # print(datas.head(5))
 
 ax = plt.gca()

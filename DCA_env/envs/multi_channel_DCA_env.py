@@ -24,7 +24,7 @@ class MultiChannelDCAEnv(gym.Env):
         self.channels = math.ceil(self.channels)
         self.channels = int(self.channels) // 2
 
-        self.global_base_stations = np.zeros([self.row ,self.col ,self.channels], dtype=np.uint8)
+        # self.global_base_stations = np.zeros([self.row ,self.col ,self.channels], dtype=np.uint8)
         self.current_base_station = np.array([[0,0]])
         self.bs_assign = 0
         self.reward = 0
@@ -95,7 +95,7 @@ class MultiChannelDCAEnv(gym.Env):
 
     def step(self, action):
         self.done = False
-        if self.check_dca(action):
+        if self.check_dca(action, state):
             self.reward = 1
             self.remain_channel -= 1
             self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][action] = 255

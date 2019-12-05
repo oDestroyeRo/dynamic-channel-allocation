@@ -77,7 +77,7 @@ class MultiChannelPPORunner:
         import os
         os.environ["CUDA_VISIBLE_DEVICES"]="0"
         self.args = args
-        self.log_dir = "tmp/"
+        self.log_dir = "results/"
     def train(self):
         # policy_kwargs = dict(act_fun=tf.nn.relu, net_arch=[256, 256])
         env = gym.make('single-channel-DCA-v0')

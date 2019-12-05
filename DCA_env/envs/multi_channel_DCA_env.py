@@ -38,7 +38,7 @@ class MultiChannelDCAEnv(gym.Env):
 
         self.action_space = spaces.Discrete(self.channels)
         self.position = 1
-        self.observation_space = spaces.Box(low=0, high=255, shape=(self.row ,self.col ,self.channels), dtype=np.uint16)
+        self.observation_space = spaces.Box(low=0, high=255, shape=(self.row *self.col *self.channels,), dtype=np.uint16)
 
         self.viewer = None
         self.seed()
@@ -115,8 +115,7 @@ class MultiChannelDCAEnv(gym.Env):
                 self.next_bs()
         self.timestep +=1
         self.state = self.global_base_stations
-
-        return self.state, self.reward, self.done, {'blockprob' : self.get_blockprob()}
+        return np.reshape(self.state, (self.row * self.col * self.channels)), self.reward, self.done, {'block_prob' : self.get_blockprob()}
 
     def next_bs(self):
         # self.global_base_stations[self.current_base_station[0][0]][self.current_base_station[0][1]][:][1] = 0
@@ -164,7 +163,7 @@ class MultiChannelDCAEnv(gym.Env):
         self.state = self.global_base_stations
         # self.state = np.reshape(self.state, (self.row * self.col * self.channels * 2, ))
         # self.state = np.append(self.state, self.encode(self.current_base_station[0,0], self.current_base_station[0,1]))
-        return self.state
+        return np.reshape(self.state, (self.row * self.col * self.channels))
 
     def render(self, mode='human'):
         class DrawText:

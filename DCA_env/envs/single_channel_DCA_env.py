@@ -9,16 +9,27 @@ class SingleChannelDCAEnv(gym.Env):
 
     metadata = {'render.modes': ['human', 'rgb_array']}
     def __init__(self):
-        self.row = 7
-        self.col = 7
-        self.channels = 10
+        self.row = 10
+        self.col = 10
+        self.channels = 5
         self.current_base_station = [[0,0]]
+        self.state = np.zeros([self.row, self.col, 2], dtype=int)
 
         self.action_space = spaces.Discrete(self.channels)
-        self.observation_space = spaces.Box(low=0, high=255, shape=(self.row ,self.col, 3), dtype=np.uint8)
+        self.observation_space = spaces.Box(low=0, high=255, shape=(self.row *self.col* 2,), dtype=np.uint8)
         self.viewer = None
         self.seed()
 
+        state = self.state
+        for i in range(self.row):	
+            for j in range(self.col):	
+                action = np.random.randint(0, self.channels)	
+                self.current_base_station[0][0] = i	
+                self.current_base_station[0][1] = j	
+                while self.check_dca(action, state) == False:	
+                    action = np.random.randint(0, self.channels)	
+                state[i,j,0] = action
+        self.temp_state = state
 
 
     
@@ -63,8 +74,9 @@ class SingleChannelDCAEnv(gym.Env):
             self.blocktimes +=1
         self.timestep +=1
         state = self.next_bs(state)
+        # state = np.reshape( state, (self.row*self.col * 3))
         self.state = state
-        return self.state, self.reward, done, {}
+        return np.reshape( state, self.observation_space.shape), self.reward, done, {'block_prob' : self.get_blockprob()}
 
     def get_blockprob(self):
         return self.blocktimes/self.timestep
@@ -73,11 +85,11 @@ class SingleChannelDCAEnv(gym.Env):
         self.array_render = np.zeros([self.row, self.col], dtype=object)
         self.blocktimes = 0
         self.timestep = 1
-        state = np.zeros([self.row, self.col, 3], dtype=int)
+        state = self.temp_state
         self.current_base_station = [[0,0]]
         state[self.current_base_station[0][0]][self.current_base_station[0][1]][1] = 255
         self.state = state
-        return self.state
+        return np.reshape( state, self.observation_space.shape)
 
     def render(self, mode='human'):
         class DrawText:

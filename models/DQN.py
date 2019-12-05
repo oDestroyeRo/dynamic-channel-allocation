@@ -6,24 +6,24 @@ from models.policy import Policy
 
 
 class DQNAgent():
-    def __init__(self, state_space, action_space, args, episodes=1000):
+    def __init__(self, state_space, action_space, args, episodes=10000):
         self.action_space = action_space
         # experience buffer
         self.memory = []
-        self.memory_size = 10000
+        self.memory_size = 900000
         # discount rate
-        self.gamma = 0.95
+        self.gamma = 0.99
 
         # initially 90% exploration, 10% exploitation
         self.epsilon = 1.0
         # iteratively applying decay til 10% exploration/90% exploitation
-        self.epsilon_min = 0.05
+        self.epsilon_min = 0.10
         self.epsilon_decay = self.epsilon_min / self.epsilon
         self.epsilon_decay = self.epsilon_decay ** (1. / float(episodes))
 
 
         # Q Network for training
-        n_inputs = state_space.shape
+        n_inputs = state_space.shape[0]
         n_outputs = action_space.n
         policy = Policy()
 
@@ -138,7 +138,7 @@ class DQNAgent():
         self.update_epsilon()
 
         # copy new params on old target after every 10 training updates
-        if self.replay_counter % 5 == 0:
+        if self.replay_counter % 10 == 0:
             self.update_weights()
 
         self.replay_counter += 1

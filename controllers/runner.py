@@ -10,6 +10,7 @@ from tqdm import tqdm
 from stable_baselines.common.policies import MlpPolicy, CnnPolicy
 # from stable_baselines.deepq.policies import MlpPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
+# from stable_baselines.common import make_vec_env
 from stable_baselines import PPO2, HER, DQN, SAC, DDPG, TD3, ACKTR, ACER, A2C, TRPO
 from stable_baselines.bench import Monitor
 import tensorflow as tf
@@ -34,6 +35,7 @@ class SingleChannelRunner:
 
         batch_size = 128
 
+        timesteps = 0
         count = 0
         total_reward = 0
         total_block_prob = 0
@@ -45,22 +47,24 @@ class SingleChannelRunner:
             done = False
             while not done:
                 action = agent.act(state)
-                next_state, reward, done, _ = env.step(action)
+                next_state, reward, done, info = env.step(action)
                 next_state = np.expand_dims(next_state, 0)
 
                 # store every experience unit in replay buffer
                 agent.remember(state, action, reward, next_state, done)
                 state = next_state
                 total_reward += reward
+                timesteps += 1
                 count += 1
-            total_block_prob += env.get_blockprob()
+                total_block_prob += info['block_prob']
             if episode%10 == 0:
                 #print(count, env.get_blockprop(), agent.epsilon, total_reward)
-                with open('results/dqn_35_1_channel_3.csv', 'a') as newFile:
+                with open('results/dqn_35_1_channel_4.csv', 'a') as newFile:
                     newFileWriter = csv.writer(newFile)
-                    newFileWriter.writerow([count, total_block_prob/100, total_reward/100, agent.epsilon])
+                    newFileWriter.writerow([timesteps, total_block_prob/count, total_reward/10, agent.epsilon])
                 total_reward = 0
                 total_block_prob = 0
+                count = 0
             # call experience relay
             if len(agent.memory) >= batch_size:
                 agent.replay(batch_size)
@@ -71,15 +75,15 @@ class SingleChannelRunner:
 class MultiChannelPPORunner:
     def __init__(self, args):
         import os
-        os.environ["CUDA_VISIBLE_DEVICES"]="1"
+        os.environ["CUDA_VISIBLE_DEVICES"]="0"
         self.args = args
         self.log_dir = "tmp/"
     def train(self):
         # policy_kwargs = dict(act_fun=tf.nn.relu, net_arch=[256, 256])
-        env = gym.make('MsPacman-v0')
-        env = Monitor(env, self.log_dir)
+        env = gym.make('single-channel-DCA-v0')
+        env = Monitor(env, self.log_dir, allow_early_resets=True, info_keywords=('block_prob',))
         env = DummyVecEnv([lambda: env])
-        model = PPO2(CnnPolicy, env, verbose=1)
+        model = PPO2(MlpPolicy, env, verbose=1)
         model.learn(total_timesteps=1000000000)
         model.save(self.log_dir + "ppo2_multi")
 
@@ -133,7 +137,7 @@ class MultiChannelRunner:
         # should be solved in this number of episodes
         episode_count = 1000000
 
-        batch_size = 64
+        batch_size = 128
 
         count = 0
         total_reward = 0

@@ -9,9 +9,9 @@ from pytz import timezone
 from tqdm import tqdm
 from stable_baselines.common.policies import MlpPolicy, CnnPolicy
 # from stable_baselines.deepq.policies import MlpPolicy
-from stable_baselines.common.vec_env import DummyVecEnv
+from stable_baselines.common.vec_env import DummyVecEnv, SubprocVecEnv
 # from stable_baselines.common import make_vec_env
-from stable_baselines import PPO2, HER, DQN, SAC, DDPG, TD3, ACKTR, ACER, A2C, TRPO
+from stable_baselines import PPO2, HER, DQN, SAC, DDPG, TD3, ACKTR, ACER, A2C, TRPO, PPO1
 from stable_baselines.bench import Monitor
 import tensorflow as tf
 
@@ -75,12 +75,13 @@ class SingleChannelRunner:
 class MultiChannelPPORunner:
     def __init__(self, args):
         import os
-        os.environ["CUDA_VISIBLE_DEVICES"]="0"
+        os.environ["CUDA_VISIBLE_DEVICES"]="1"
         self.args = args
         self.log_dir = "results/"
     def train(self):
         # policy_kwargs = dict(act_fun=tf.nn.relu, net_arch=[256, 256])
         env = gym.make('single-channel-DCA-v0')
+        # env = make_vec_env('single-channel-DCA-v0', n_envs=4)
         env = Monitor(env, self.log_dir, allow_early_resets=True, info_keywords=('block_prob',))
         env = DummyVecEnv([lambda: env])
         model = PPO2(MlpPolicy, env, verbose=1)

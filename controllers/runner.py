@@ -11,7 +11,7 @@ from stable_baselines.common.policies import MlpPolicy, CnnPolicy
 # from stable_baselines.deepq.policies import MlpPolicy
 from stable_baselines.common.vec_env import DummyVecEnv, SubprocVecEnv
 # from stable_baselines.common import make_vec_env
-from stable_baselines import PPO2, HER, DQN, SAC, DDPG, TD3, ACKTR, ACER, A2C, TRPO, PPO1
+from stable_baselines import PPO2
 from stable_baselines.bench import Monitor
 import tensorflow as tf
 

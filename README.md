@@ -6,7 +6,9 @@ Requirement
 - tensorflow == 1.14.0
 - keras
 - gym
+- stable-baselines
 
-> cd DCA_env
-> pip3 install -e .
-> python3 main.py --channel multi
+Run
+- cd DCA_env
+- pip3 install -e .
+- python3 main.py --channel multi

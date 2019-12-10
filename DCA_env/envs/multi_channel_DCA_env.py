@@ -179,7 +179,7 @@ class MultiChannelDCAEnv(gym.Env):
                 x = 30 + i * 20
                 for j in range(self.col):
                     bs = rendering.make_polygon([(x,y),(x-20,y-13),(x-20,y-40),(x-0,y-53),(x+20,y-40),(x+20,y-13),(x-0,y-0)], False)
-                    label = pyglet.text.Label(str(int(self.channels - np.sum(self.state[i,j,:]))),
+                    label = pyglet.text.Label(str(int(self.channels - np.sum(self.state[i,j,:,0])/255)),
                                     font_size=10,
                                     x=x-5, y=y-25,
                                     anchor_x='left', anchor_y='center', color=(255, 0, 0, 255))
@@ -196,7 +196,7 @@ class MultiChannelDCAEnv(gym.Env):
         else:
             for i in range(self.row):
                 for j in range(self.col):
-                    self.array_render[i,j].text = str(int(self.channels - np.sum(self.state[i,j,:])))
+                    self.array_render[i,j].text = str(int(self.channels - np.sum(self.state[i,j,:,0])/255))
             self.timestamp_label.text = str(datetime.fromtimestamp(self.timestamp, la).strftime('%Y-%m-%d %H:%M:%S'))
         return self.viewer.render(return_rgb_array = mode=='rgb_array')
 

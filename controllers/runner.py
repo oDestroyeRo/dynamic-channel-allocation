@@ -75,7 +75,7 @@ class SingleChannelRunner:
 class MultiChannelPPORunner:
     def __init__(self, args):
         import os
-        os.environ["CUDA_VISIBLE_DEVICES"]="1"
+        os.environ["CUDA_VISIBLE_DEVICES"]="0"
         self.args = args
         self.log_dir = "results/"
     def train(self):
@@ -85,40 +85,21 @@ class MultiChannelPPORunner:
         env = Monitor(env, self.log_dir, allow_early_resets=True, info_keywords=('block_prob',))
         env = DummyVecEnv([lambda: env])
         model = PPO2(MlpPolicy, env, verbose=1)
-        model.learn(total_timesteps=1000000000)
+        model.learn(total_timesteps=100)
         model.save(self.log_dir + "ppo2_multi")
 
     def test(self):
         model = PPO2.load(self.log_dir + "ppo2_multi")
-        episode_count = 100000
-        count = 0
-        total_reward = 0
-        total_block_prob = 0
-        max_timestamp = 0
-        timestamp = 0
         env = gym.make('multi-channel-DCA-v0')
         state = env.reset()
-        for episode in tqdm(range(episode_count)):
+        episode_count = 100
+        for _ in tqdm(range(episode_count)):
             state = env.reset()
             done = False
             while not done:
+                env.render()
                 action, _ = model.predict(state)
-                next_state, reward, done, _ = env.step(action)
-                timestamp = env.get_timestamp()
-                if (timestamp > max_timestamp):
-                    max_timestamp = timestamp
-                state = next_state
-                total_reward += reward
-                count += 1
-            total_block_prob += env.get_blockprob()
-            if episode%100 == 0:
-                with open('results/ppo_35_multi_channel_real_traffic.csv', 'a') as newFile:
-                    newFileWriter = csv.writer(newFile)
-                    newFileWriter.writerow([count, total_block_prob/100, total_reward/100, datetime.fromtimestamp(max_timestamp, la).strftime('%Y-%m-%d %H:%M:%S')])
-                total_reward = 0
-                total_block_prob = 0
-                env.blocktimes = 0
-                env.timestep = 1
+                _, _, done, _ = env.step(action)
         env.close()
 
 class MultiChannelRunner:

@@ -80,7 +80,7 @@ class MultiChannelPPORunner:
         self.log_dir = "results/"
     def train(self):
         # policy_kwargs = dict(act_fun=tf.nn.relu, net_arch=[256, 256])
-        env = gym.make('single-channel-DCA-v0')
+        env = gym.make('multi-channel-DCA-v0')
         # env = make_vec_env('single-channel-DCA-v0', n_envs=4)
         env = Monitor(env, self.log_dir, allow_early_resets=True, info_keywords=('block_prob',))
         env = DummyVecEnv([lambda: env])

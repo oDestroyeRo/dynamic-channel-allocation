@@ -25,8 +25,6 @@ class SingleChannelRunner:
 
     def train(self):
         env = gym.make('single-channel-DCA-v0')
-        state_size = env.observation_space
-        action_size = env.action_space
 
         agent = DQNAgent(env.observation_space, env.action_space, self.args)
 
@@ -85,7 +83,7 @@ class MultiChannelPPORunner:
         env = Monitor(env, self.log_dir, allow_early_resets=True, info_keywords=('block_prob',))
         env = DummyVecEnv([lambda: env])
         model = PPO2(MlpPolicy, env, verbose=1)
-        model.learn(total_timesteps=100)
+        model.learn(total_timesteps=1000000)
         model.save(self.log_dir + "ppo2_multi")
 
     def test(self):
@@ -97,7 +95,7 @@ class MultiChannelPPORunner:
             state = env.reset()
             done = False
             while not done:
-                env.render()
+                # env.render()
                 action, _ = model.predict(state)
                 _, _, done, _ = env.step(action)
         env.close()
@@ -111,8 +109,6 @@ class MultiChannelRunner:
     def train(self):
         env = gym.make('multi-channel-DCA-v0')
         # env = Monitor(env, './results/videos', force=True)
-        state_size = env.observation_space
-        action_size = env.action_space
 
         agent = DQNAgent(env.observation_space, env.action_space, self.args)
 

@@ -24,9 +24,9 @@ class SingleChannelDCAEnv(gym.Env):
         state = self.state
         for i in range(self.row):	
             for j in range(self.col):	
-                action = np.random.randint(0, self.channels)	
-                self.current_base_station[0][0] = i	
-                self.current_base_station[0][1] = j	
+                # action = np.random.randint(0, self.channels)	
+                # self.current_base_station[0][0] = i	
+                # self.current_base_station[0][1] = j	
                 # while self.check_dca(action, state) == False:	
                 #     action = np.random.randint(0, self.channels)	
                 state[i,j,0] = self.channels + 1

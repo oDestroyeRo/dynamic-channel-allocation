@@ -33,7 +33,7 @@ class MultiChannelDCAEnv(gym.Env):
         self.timestamp = self.traffic_data[ self.traffic_timestep, 0, 0, 0]
 
         self.action_space = spaces.Discrete(self.channels)
-        self.observation_space = spaces.Box(low=0, high=255, shape=(self.row *self.col *self.channels *self.status,), dtype=np.uint8)
+        self.observation_space = spaces.Box(low=0, high=self.channels+1, shape=(self.row *self.col *self.channels *self.status,), dtype=np.uint8)
 
         self.viewer = None
         self.seed()
@@ -92,9 +92,8 @@ class MultiChannelDCAEnv(gym.Env):
         if self.current_base_station[0, 1] >= self.col:
             self.current_base_station[0, 0] += 1
             if self.current_base_station[0, 0] >= self.row and self.current_base_station[0, 1] >= self.col:
-                # print("change")
-                # self.traffic_timestep += 1
-                # self.set_timestamp()
+                self.traffic_timestep += 1
+                self.set_timestamp()
                 state = np.zeros([self.row, self.col, self.channels, self.status], dtype=np.uint8)
                 for i in range(self.row):
                     for j in range(self.col):
@@ -132,7 +131,7 @@ class MultiChannelDCAEnv(gym.Env):
             # self.reward = -1
             self.blocktimes += 1
             state[self.current_base_station[0, 0], self.current_base_station[0, 1], :, 0] = 0
-            # self.reward = -int(state[self.current_base_station[0, 0], self.current_base_station[0, 1], action, 2])
+            self.reward = -int(state[self.current_base_station[0, 0], self.current_base_station[0, 1], action, 2])
             self.reward = -1
             # state[self.current_base_station[0, 0], self.current_base_station[0, 1], :, 2] -= 1
             state = self.next_bs(state)
@@ -152,7 +151,7 @@ class MultiChannelDCAEnv(gym.Env):
         self.blocktimes = 0
         self.current_base_station = np.array([[0,0]])
         state = np.zeros([self.row, self.col, self.channels, self.status], dtype=np.uint8)
-        state[:, :, :, 0] = 255
+        # state[:, :, :, 0] = 255
         self.traffic_timestep = 0
         # state[self.current_base_station[0, 0], self.current_base_station[0, 1], :, 2] = math.ceil(self.traffic_data[ self.traffic_timestep, self.current_base_station[0, 0], self.current_base_station[0, 1], 1] / self.traffic_channel)
         for i in range(self.row):

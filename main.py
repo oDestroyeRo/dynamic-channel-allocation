@@ -1,4 +1,4 @@
-from controllers.runner import *
+from controllers.runner import MultiChannelPPORunner, SingleChannelRunner, MultiChannelRunner
 import argparse
 
 def parse_args():

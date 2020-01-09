@@ -1,4 +1,4 @@
-from controllers.runner import MultiChannelPPORunner, SingleChannelRunner, MultiChannelRunner
+from controllers.runner import MultiChannelPPORunner, SingleChannelRunner, MultiChannelRunner, MultiChannelRandom
 import argparse
 
 def parse_args():
@@ -18,6 +18,9 @@ if __name__ == "__main__":
         runner = MultiChannelPPORunner(args)
         runner.train()
         runner.test()
+    elif args.model == "random":
+        runner = MultiChannelRandom()
+        runner.run()
 
     # elif args.model == "LDS":
     #     runner = MultiChannelLDSRunner(args)
@@ -30,4 +33,5 @@ if __name__ == "__main__":
     elif args.channel == "multi":
         runner = MultiChannelRunner(args)
         runner.train()
+
 

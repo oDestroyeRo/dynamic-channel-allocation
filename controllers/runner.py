@@ -7,15 +7,30 @@ from datetime import datetime
 import pytz
 from pytz import timezone
 from tqdm import tqdm
-from stable_baselines.common.policies import MlpPolicy, CnnPolicy
+# from stable_baselines.common.policies import MlpPolicy, CnnPolicy, MlpLnLstmPolicy
 # from stable_baselines.deepq.policies import MlpPolicy
 from stable_baselines.common.vec_env import DummyVecEnv, SubprocVecEnv
-# from stable_baselines.common import make_vec_env
+from stable_baselines.common import make_vec_env
 from stable_baselines import PPO2
 from stable_baselines.bench import Monitor
+# from stable_baselines.common.policies import register_policy
 import tensorflow as tf
+from stable_baselines.a2c.utils import conv, linear, conv_to_fc
+from stable_baselines.common.policies import FeedForwardPolicy, register_policy
 
 la = timezone("CET")
+
+def modified_cnn(scaled_images, **kwargs):
+    activ = tf.nn.relu
+    layer_1 = activ(conv(scaled_images, 'c1', n_filters=32, filter_size=3, stride=1, init_scale=np.sqrt(2), **kwargs))
+    layer_2 = activ(conv(layer_1, 'c2', n_filters=64, filter_size=3, stride=1, init_scale=np.sqrt(2), **kwargs))
+    layer_3 = activ(conv(layer_2, 'c3', n_filters=64, filter_size=3, stride=1, init_scale=np.sqrt(2), **kwargs))
+    layer_3 = conv_to_fc(layer_3)
+    return activ(linear(layer_3, 'fc1', n_hidden=512, init_scale=np.sqrt(2)))
+
+class CustomPolicy(FeedForwardPolicy):
+    def __init__(self, *args, **kwargs):
+        super(CustomPolicy, self).__init__(*args, **kwargs, cnn_extractor=modified_cnn, feature_extraction="cnn")
 
 class SingleChannelRunner:
     def __init__(self, args):
@@ -69,21 +84,53 @@ class SingleChannelRunner:
 
         # close the env and write monitor result info to disk
         env.close() 
+class MultiChannelRandom:
+    def run(self):
+        env = gym.make('multi-channel-DCA-v0')
+        episode_count = 600
+        for _ in tqdm(range(episode_count)):
+            state = env.reset()
+            done = False
+            count = 0
+            total_reward = 0
+            while not done:
+                # env.render()
+                _, reward, done, info = env.step(env.action_space.sample())
+                count+=1
+                total_reward += reward
+            with open('results/random.csv', 'a') as newFile:
+                newFileWriter = csv.writer(newFile)
+                newFileWriter.writerow([total_reward, count, info['block_prob'], info['timestamp']])
+        env.close()
 
 class MultiChannelPPORunner:
     def __init__(self, args):
         import os
-        os.environ["CUDA_VISIBLE_DEVICES"]="0"
+        # os.environ["CUDA_VISIBLE_DEVICES"]="1"
         self.args = args
         self.log_dir = "results/"
+
+
     def train(self):
         # policy_kwargs = dict(act_fun=tf.nn.relu, net_arch=[256, 256])
+        # env = gym.make('multi-channel-DCA-v0')
         env = gym.make('multi-channel-DCA-v0')
-        # env = make_vec_env('single-channel-DCA-v0', n_envs=4)
-        env = Monitor(env, self.log_dir, allow_early_resets=True, info_keywords=('block_prob',))
-        env = DummyVecEnv([lambda: env])
-        model = PPO2(MlpPolicy, env, verbose=1)
-        model.learn(total_timesteps=1000000)
+        space = env.observation_space
+        # print(env.observation_space.shape)
+        env = make_vec_env('multi-channel-DCA-v0', n_envs=4)
+        # n_cpu = 12
+        # env = SubprocVecEnv([lambda: gym.make('multi-channel-DCA-v0') for i in range(n_cpu)])
+        # env = Monitor(env, self.log_dir, allow_early_resets=True, info_keywords=('block_prob','timestamp',))
+        # env = DummyVecEnv([lambda: env])
+        # policy_kwargs = dict(act_fun=tf.nn.tanh, net_arch=[256, 128])
+        # policy_kwargs = dict(act_fun=tf.nn.tanh, net_arch=[512, 256, 128])
+        # model = PPO2(MlpPolicy, env, verbose=1, gamma=0.99, n_steps=512, nminibatches=128)
+        # model = PPO2(MlpPolicy, env, verbose=1, gamma=0.99, n_steps=128, nminibatches=4, cliprange=0.2)
+        # model = PPO2("MlpPolicy", env, verbose=1)
+
+        model = PPO2(CustomPolicy, env=env, n_steps=4096, nminibatches=8, lam=0.95, gamma=0.99, noptepochs=10,
+                 ent_coef=0.0, learning_rate=1e-4, cliprange=0.2, verbose=2, tensorboard_log='results/PPO')
+        model.learn(total_timesteps=100000000)
         model.save(self.log_dir + "ppo2_multi")
 
     def test(self):
@@ -94,10 +141,17 @@ class MultiChannelPPORunner:
         for _ in tqdm(range(episode_count)):
             state = env.reset()
             done = False
+            count = 0
+            total_reward = 0
             while not done:
                 # env.render()
                 action, _ = model.predict(state)
-                _, _, done, _ = env.step(action)
+                _, reward, done, info = env.step(action)
+                count+=1
+                total_reward += reward
+            with open('results/ppo_real_traffic_500.csv', 'a') as newFile:
+                newFileWriter = csv.writer(newFile)
+                newFileWriter.writerow([total_reward, info['block_prob'], info['timestamp']])
         env.close()
 
 class MultiChannelRunner:

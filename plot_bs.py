@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import pandas as pd
-datas = pd.read_csv('Milano_TIM_LTE_RBS.csv')
+datas = pd.read_csv('Milano_bs.csv')
+
+# print(datas[['lat','lon']].iloc[142])
 
 
 plt.scatter(x=datas['lon'].astype(float), y=datas['lat'].astype(float))

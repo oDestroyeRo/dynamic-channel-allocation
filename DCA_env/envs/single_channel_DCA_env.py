@@ -12,7 +12,7 @@ class SingleChannelDCAEnv(gym.Env):
         self.row = 10
         self.col = 10
         self.channels = 4
-        self.current_base_station = [[0,0]]
+        self.current_base_station = [0,0]
         self.status = 2 # channel // location 
         self.state = np.zeros([self.row, self.col, self.status], dtype=int)
 
@@ -22,44 +22,37 @@ class SingleChannelDCAEnv(gym.Env):
         self.seed()
 
         state = self.state
-        for i in range(self.row):	
-            for j in range(self.col):	
-                # action = np.random.randint(0, self.channels)	
-                # self.current_base_station[0][0] = i	
-                # self.current_base_station[0][1] = j	
-                # while self.check_dca(action, state) == False:	
-                #     action = np.random.randint(0, self.channels)	
-                state[i,j,0] = self.channels + 1
+        state[:,:,0] = self.channels + 1
         self.temp_state = state
 
 
     
     def check_dca(self, action, state):
-        c_bs_r = self.current_base_station[0][0] 
-        c_bs_c = self.current_base_station[0][1]
-        if c_bs_r != 0 and state[c_bs_r-1][c_bs_c][0] == action:
+        c_bs_r = self.current_base_station[0] 
+        c_bs_c = self.current_base_station[1]
+        if c_bs_r != 0 and state[c_bs_r-1, c_bs_c, 0] == action:
             return False
-        if c_bs_r != self.row-1 and state[c_bs_r+1][c_bs_c][0] == action:
+        if c_bs_r != self.row-1 and state[c_bs_r+1, c_bs_c, 0] == action:
             return False
-        if c_bs_c != 0 and state[c_bs_r][c_bs_c-1][0] == action:
+        if c_bs_c != 0 and state[c_bs_r, c_bs_c-1, 0] == action:
             return False
-        if c_bs_c != self.col-1 and state[c_bs_r][c_bs_c+1][0] == action:
+        if c_bs_c != self.col-1 and state[c_bs_r, c_bs_c+1, 0] == action:
             return False
-        if c_bs_r != self.row-1 and c_bs_c != 0 and state[c_bs_r+1][c_bs_c-1][0] == action:
+        if c_bs_r != self.row-1 and c_bs_c != 0 and state[c_bs_r+1, c_bs_c-1, 0] == action:
             return False
-        if c_bs_r != 0 and c_bs_c != self.col-1 and state[c_bs_r-1][c_bs_c+1][0] == action:
+        if c_bs_r != 0 and c_bs_c != self.col-1 and state[c_bs_r-1, c_bs_c+1, 0] == action:
             return False
         return True
 
     def next_bs(self, state):
-        state[self.current_base_station[0][0]][self.current_base_station[0][1]][1] = 0
-        self.current_base_station[0][1] += 1
-        if self.current_base_station[0][1] >= self.col:
-            self.current_base_station[0][1] = 0
-            self.current_base_station[0][0] += 1
-            if self.current_base_station[0][0] >= self.row:
-                self.current_base_station[0][0] = 0
-        state[self.current_base_station[0][0]][self.current_base_station[0][1]][1] = self.channels + 1
+        state[self.current_base_station[0], self.current_base_station[1], 1] = 0
+        self.current_base_station[1] += 1
+        if self.current_base_station[1] >= self.col:
+            self.current_base_station[1] = 0
+            self.current_base_station[0] += 1
+            if self.current_base_station[0] >= self.row:
+                self.current_base_station[0] = 0
+        state[self.current_base_station[0], self.current_base_station[1], 1] = self.channels + 1
         return state
 
 
@@ -68,7 +61,7 @@ class SingleChannelDCAEnv(gym.Env):
         state = self.state
         if self.check_dca(action, state):
             self.reward = 1
-            state[self.current_base_station[0][0]][self.current_base_station[0][1]][0] = action
+            state[self.current_base_station[0], self.current_base_station[1], 0] = action
 
         else:
             self.reward = -1
@@ -86,8 +79,8 @@ class SingleChannelDCAEnv(gym.Env):
         self.blocktimes = 0
         self.timestep = 1
         state = self.temp_state
-        self.current_base_station = [[0,0]]
-        state[self.current_base_station[0][0]][self.current_base_station[0][1]][1] = self.channels + 1
+        self.current_base_station = [0,0]
+        state[self.current_base_station[0], self.current_base_station[1], 1] = self.channels + 1
         self.state = state
         return np.reshape( state, self.observation_space.shape)
 

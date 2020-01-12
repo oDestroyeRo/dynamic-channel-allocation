@@ -1,6 +1,7 @@
 import gym
 import numpy as np
 import csv
+import os
 from models.DQN import DQNAgent
 import DCA_env
 from datetime import datetime
@@ -106,31 +107,46 @@ class MultiChannelRandom:
 class MultiChannelPPORunner:
     def __init__(self, args):
         import os
-        # os.environ["CUDA_VISIBLE_DEVICES"]="1"
+        os.environ["CUDA_VISIBLE_DEVICES"]="1"
         self.args = args
         self.log_dir = "results/"
 
 
     def train(self):
+        def make_env(rank,env_id,monitor_dir):
+            def _init():
+                env = gym.make(env_id)
+                # Wrap the env in a Monitor wrapper
+                # to have additional training information
+                monitor_path = os.path.join(monitor_dir, str(rank)) if monitor_dir is not None else None
+                # Create the monitor folder if needed
+                if monitor_path is not None:
+                    os.makedirs(monitor_dir, exist_ok=True)
+                env = Monitor(env, filename=monitor_path, allow_early_resets=True, info_keywords=('block_prob','timestamp',))
+                # Optionally, wrap the environment with the provided wrapper
+                return env
+            return _init
         # policy_kwargs = dict(act_fun=tf.nn.relu, net_arch=[256, 256])
         # env = gym.make('multi-channel-DCA-v0')
-        env = gym.make('multi-channel-DCA-v0')
-        space = env.observation_space
+        # env = gym.make('multi-channel-DCA-v0')
+        # space = env.observation_space
         # print(env.observation_space.shape)
-        env = make_vec_env('multi-channel-DCA-v0', n_envs=4)
+        # env = make_vec_env('multi-channel-DCA-v0', n_envs=4, monitor_dir="results")
         # n_cpu = 12
+        n_envs = 4
+        monitor_dir = "results"
         # env = SubprocVecEnv([lambda: gym.make('multi-channel-DCA-v0') for i in range(n_cpu)])
         # env = Monitor(env, self.log_dir, allow_early_resets=True, info_keywords=('block_prob','timestamp',))
-        # env = DummyVecEnv([lambda: env])
+        env = DummyVecEnv([make_env(i, 'multi-channel-DCA-v0', monitor_dir) for i in range(n_envs)])
         # policy_kwargs = dict(act_fun=tf.nn.tanh, net_arch=[256, 128])
         # policy_kwargs = dict(act_fun=tf.nn.tanh, net_arch=[512, 256, 128])
         # model = PPO2(MlpPolicy, env, verbose=1, gamma=0.99, n_steps=512, nminibatches=128)
         # model = PPO2(MlpPolicy, env, verbose=1, gamma=0.99, n_steps=128, nminibatches=4, cliprange=0.2)
         # model = PPO2("MlpPolicy", env, verbose=1)
 
-        model = PPO2(CustomPolicy, env=env, n_steps=4096, nminibatches=8, lam=0.95, gamma=0.99, noptepochs=10,
+        model = PPO2(CustomPolicy, env=env, n_steps=8192, nminibatches=32, lam=0.95, gamma=0.99, noptepochs=10,
                  ent_coef=0.0, learning_rate=1e-4, cliprange=0.2, verbose=2, tensorboard_log='results/PPO')
-        model.learn(total_timesteps=100000000)
+        model.learn(total_timesteps=10000000)
         model.save(self.log_dir + "ppo2_multi")
 
     def test(self):

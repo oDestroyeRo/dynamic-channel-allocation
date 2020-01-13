@@ -145,7 +145,7 @@ class MultiChannelPPORunner:
         # model = PPO2("MlpPolicy", env, verbose=1)
 
         model = PPO2(CustomPolicy, env=env, n_steps=8192, nminibatches=32, lam=0.95, gamma=0.99, noptepochs=10,
-                 ent_coef=0.0, learning_rate=1e-4, cliprange=0.2, verbose=2, tensorboard_log='results/PPO')
+                 ent_coef=0.0, learning_rate=3e-4, cliprange=0.2, verbose=2, tensorboard_log='results/PPO')
         model.learn(total_timesteps=10000000)
         model.save(self.log_dir + "ppo2_multi")
 
@@ -153,21 +153,23 @@ class MultiChannelPPORunner:
         model = PPO2.load(self.log_dir + "ppo2_multi")
         env = gym.make('multi-channel-DCA-v0')
         state = env.reset()
-        episode_count = 100
-        for _ in tqdm(range(episode_count)):
-            state = env.reset()
-            done = False
-            count = 0
-            total_reward = 0
-            while not done:
-                # env.render()
-                action, _ = model.predict(state)
-                _, reward, done, info = env.step(action)
-                count+=1
-                total_reward += reward
-            with open('results/ppo_real_traffic_500.csv', 'a') as newFile:
-                newFileWriter = csv.writer(newFile)
-                newFileWriter.writerow([total_reward, info['block_prob'], info['timestamp']])
+        # episode_count = 100
+        # for _ in tqdm(range(episode_count)):
+        state = env.reset()
+        done = False
+        count = 0
+        total_reward = 0
+        while not done:
+            # env.render()
+            # action, _ = model.predict(state)
+            _, reward, done, info = env.step(env.action_space.sample())
+            count+=1
+            total_reward += reward
+            if info['is_nexttime']:
+                with open('results/ppo_real_traffic_10_test_random.csv', 'a') as newFile:
+                    newFileWriter = csv.writer(newFile)
+                    newFileWriter.writerow([total_reward, info['temp_blockprob'], info['timestamp']])
+                    total_reward = 0
         env.close()
 
 class MultiChannelRunner:

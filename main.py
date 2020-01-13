@@ -17,7 +17,7 @@ if __name__ == "__main__":
     if args.model == "ppo":
         runner = MultiChannelPPORunner(args)
         runner.train()
-        runner.test()
+        # runner.test()
     elif args.model == "random":
         runner = MultiChannelRandom()
         runner.run()

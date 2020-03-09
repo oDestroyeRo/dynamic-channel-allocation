@@ -107,7 +107,7 @@ class MultiChannelRandom:
 class MultiChannelPPORunner:
     def __init__(self, args):
         import os
-        os.environ["CUDA_VISIBLE_DEVICES"]="1"
+        # os.environ["CUDA_VISIBLE_DEVICES"]="1"
         self.args = args
         self.log_dir = "results/"
 
@@ -133,7 +133,7 @@ class MultiChannelPPORunner:
         # print(env.observation_space.shape)
         # env = make_vec_env('multi-channel-DCA-v0', n_envs=4, monitor_dir="results")
         # n_cpu = 12
-        n_envs = 4
+        n_envs = 6
         monitor_dir = "results"
         # env = SubprocVecEnv([lambda: gym.make('multi-channel-DCA-v0') for i in range(n_cpu)])
         # env = Monitor(env, self.log_dir, allow_early_resets=True, info_keywords=('block_prob','timestamp',))
@@ -144,9 +144,9 @@ class MultiChannelPPORunner:
         # model = PPO2(MlpPolicy, env, verbose=1, gamma=0.99, n_steps=128, nminibatches=4, cliprange=0.2)
         # model = PPO2("MlpPolicy", env, verbose=1)
 
-        model = PPO2(CustomPolicy, env=env, n_steps=8192, nminibatches=32, lam=0.95, gamma=0.99, noptepochs=10,
+        model = PPO2(CustomPolicy, env=env, n_steps=1024, nminibatches=32, lam=0.95, gamma=0.99, noptepochs=10,
                  ent_coef=0.0, learning_rate=3e-4, cliprange=0.2, verbose=2, tensorboard_log='results/PPO')
-        model.learn(total_timesteps=10000000)
+        model.learn(total_timesteps=100000000)
         model.save(self.log_dir + "ppo2_multi")
 
     def test(self):

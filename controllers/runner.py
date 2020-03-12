@@ -133,7 +133,7 @@ class MultiChannelPPORunner:
         # print(env.observation_space.shape)
         # env = make_vec_env('multi-channel-DCA-v0', n_envs=4, monitor_dir="results")
         # n_cpu = 12
-        n_envs = 6
+        n_envs = 4
         monitor_dir = "results"
         # env = SubprocVecEnv([lambda: gym.make('multi-channel-DCA-v0') for i in range(n_cpu)])
         # env = Monitor(env, self.log_dir, allow_early_resets=True, info_keywords=('block_prob','timestamp',))

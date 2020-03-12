@@ -32,7 +32,7 @@ class MultiChannelDCAEnv(gym.Env):
         # self.channels = np.max(self.traffic_data[:,:,:,1]) / self.traffic_channel
         # self.channels = math.ceil(self.channels)
         # self.channels = int(self.channels)
-        self.channels = 100
+        self.channels = 50
         self.status = 2 #channel available //location
         self.current_base_station = [0,0]
         self.reward = 0
@@ -136,8 +136,8 @@ class MultiChannelDCAEnv(gym.Env):
             self.current_base_station[1] = bs_random_index % self.col
             while not self.is_channel_avalable(state):
             #     # print(self.current_base_station)
-                self.blocktimes += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 1000
-                self.timestep += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 1000
+                self.blocktimes += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 500
+                self.timestep += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 500
                 self.status_array[self.current_base_station[0], self.current_base_station[1], 0] = 0
             #     # cur_index = (self.current_base_station[0] * self.row) + (self.current_base_station[1] % self.col)
                 self.bs_available.remove(bs_random_index)

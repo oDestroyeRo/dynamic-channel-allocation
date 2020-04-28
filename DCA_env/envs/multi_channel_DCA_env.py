@@ -22,7 +22,7 @@ class MultiChannelDCAEnv(gym.Env):
         bs_datas = pd.read_csv('Milano_bs.csv')
         self.bs_position = bs_datas[['lat','lon']]
         self.bs_position = self.bs_position.sort_values(by=['lat', 'lon'])
-        self.bs_range = 0.0045045045 * 2 # 500m
+        self.bs_range = 0.0045045045 * 2 # 500m * 2
         self.list_bs_in_range = dict()
         self.traffic_data = np.load("mobile_traffic/npy_merge/merge_traffic.npy")
         self.row = 12
@@ -40,6 +40,7 @@ class MultiChannelDCAEnv(gym.Env):
         self.blocktimes = 0
         self.total_timestep = 1
         self.total_blocktime = 0
+        self.drop_times = 0
         self.state = None
         self.traffic_timestep = 0
         self.timestamp = self.traffic_data[ self.traffic_timestep, 0, 0, 0]
@@ -112,6 +113,7 @@ class MultiChannelDCAEnv(gym.Env):
             cur_index = (self.current_base_station[0] * self.row) + (self.current_base_station[1] % self.col)
             # self.blocktimes += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 250
             # self.timestep += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 250
+            self.drop_times += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 500
             self.total_blocktimes += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 500
             self.total_timestep += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 500
             self.bs_available.remove(cur_index)
@@ -124,8 +126,9 @@ class MultiChannelDCAEnv(gym.Env):
             #     # print(self.current_base_station)
                 # self.blocktimes += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 250
                 # self.timestep += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 250
-                self.total_blocktimes += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 200
-                self.total_timestep += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 200
+                self.drop_times += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 500
+                self.total_blocktimes += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 500
+                self.total_timestep += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 500
                 self.status_array[self.current_base_station[0], self.current_base_station[1], 0] = 0
             #     # cur_index = (self.current_base_station[0] * self.row) + (self.current_base_station[1] % self.col)
                 self.bs_available.remove(bs_random_index)
@@ -143,10 +146,12 @@ class MultiChannelDCAEnv(gym.Env):
             self.is_nexttime = True
             self.temp_blockprob = self.get_blockprob()
             self.temp_total_blockprob = self.get_total_blockprob()
+            self.temp_drop_rate = self.get_drop_rate()
             self.blocktimes = 0
             self.timestep = 1
             self.total_blocktimes = 0
             self.total_timestep = 1
+            self.drop_times = 0
             if self.traffic_timestep - self.temp_timestep >= 1:
                 self.done = True
             self.set_timestamp()
@@ -249,7 +254,7 @@ class MultiChannelDCAEnv(gym.Env):
         self.timestep +=1
         self.total_timestep +=1
         # print(state[self.current_base_station[0], self.current_base_station[1],:])
-        return np.reshape(self.state, self.observation_space.shape), self.reward, self.done, {'timestamp' : self.get_timestamp(), 'is_nexttime' : self.is_nexttime, 'temp_blockprob' : self.temp_blockprob, 'temp_total_blockprob' : self.temp_total_blockprob}
+        return np.reshape(self.state, self.observation_space.shape), self.reward, self.done, {'timestamp' : self.get_timestamp(), 'is_nexttime' : self.is_nexttime, 'temp_blockprob' : self.temp_blockprob, 'temp_total_blockprob' : self.temp_total_blockprob, 'drop_rate' : self.temp_drop_rate}
 
     def get_timestamp(self):
         return str(datetime.fromtimestamp(self.timestamp, la).strftime('%Y-%m-%d %H:%M:%S'))
@@ -259,6 +264,9 @@ class MultiChannelDCAEnv(gym.Env):
 
     def get_total_blockprob(self):
         return self.total_blocktimes/self.total_timestep
+
+    def get_drop_rate(self):
+        return self.drop_times/self.total_timestep
 
     def set_timestamp(self):
         self.timestamp = self.traffic_data[ self.traffic_timestep, 0, 0, 0]
@@ -277,7 +285,7 @@ class MultiChannelDCAEnv(gym.Env):
         # self.traffic_timestep += 1
         if self.traffic_timestep >= 8630: #8630
             self.traffic_timestep = 0
-        print(self.traffic_timestep, end=',')
+        # print(self.traffic_timestep, end=',')
         # self.traffic_timestep = np.random.randint(self.traffic_data.shape[0])
         self.temp_timestep = self.traffic_timestep
         # state[self.current_base_station[0], self.current_base_station[1], :, 2] = math.ceil(self.traffic_data[ self.traffic_timestep, self.current_base_station[0], self.current_base_station[1], 1] / self.traffic_channel)

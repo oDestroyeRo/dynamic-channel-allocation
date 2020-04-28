@@ -10,9 +10,9 @@ from pytz import timezone
 from tqdm import tqdm
 # from stable_baselines.common.policies import MlpPolicy, CnnPolicy, MlpLnLstmPolicy
 # from stable_baselines.deepq.policies import MlpPolicy
-from stable_baselines.common.vec_env import DummyVecEnv, SubprocVecEnv
+from stable_baselines.common.vec_env import DummyVecEnv, SubprocVecEnv, VecNormalize
 from stable_baselines.common import make_vec_env
-from stable_baselines import PPO2, DQN, A2C
+from stable_baselines import PPO2, DQN, A2C, ACER
 from stable_baselines.bench import Monitor
 # from stable_baselines.common.policies import register_policy
 import tensorflow as tf
@@ -38,7 +38,7 @@ class CustomPolicy(FeedForwardPolicy):
 class DCARunner:
     def __init__(self, args):
         import os
-        os.environ["CUDA_VISIBLE_DEVICES"]="0"
+        os.environ["CUDA_VISIBLE_DEVICES"]="1"
         self.args = args
         self.log_dir = "results/"
 
@@ -58,29 +58,45 @@ class DCARunner:
                 return env
             return _init
 
-        n_envs = 12
+        n_envs = 16
         monitor_dir = "results"
         if self.args.model.upper() == "DQN":
             from stable_baselines.deepq.policies import MlpPolicy
             env = gym.make('multi-channel-DCA-v0')
-            model = DQN(MlpPolicy, env=env, verbose=1, tensorboard_log='results/PPO', full_tensorboard_log=True, prioritized_replay=True, buffer_size=200000)
+            # env = VecNormalize(env)
+            model = DQN(MlpPolicy, env=env, verbose=1, tensorboard_log='results/RL', prioritized_replay=True, buffer_size=20000)
         elif self.args.model.upper() == "PPO":
             from stable_baselines.common.policies import MlpPolicy
+            n_envs = 16
             env = DummyVecEnv([make_env(i, 'multi-channel-DCA-v0', monitor_dir) for i in range(n_envs)])
+            # env = VecNormalize(env)
             model = PPO2(MlpPolicy, env=env, n_steps=2048, nminibatches=32, lam=0.95, gamma=0.99, noptepochs=10, ent_coef=0.0,
-                learning_rate=3e-4, cliprange=0.2, verbose=2, tensorboard_log='results/PPO')
+                learning_rate=2.75e-4, cliprange=0.2, verbose=2, tensorboard_log='results/RL')
         elif self.args.model.upper() == "A2C":
             from stable_baselines.common.policies import MlpPolicy
+            n_envs = 8
             env = DummyVecEnv([make_env(i, 'multi-channel-DCA-v0', monitor_dir) for i in range(n_envs)])
-            model = A2C(MlpPolicy, env=env, n_steps=256, verbose=2, learning_rate=3e-4, tensorboard_log='results/PPO')
+            # env = VecNormalize(env)
+            model = A2C(MlpPolicy, env=env, n_steps=32, verbose=2, learning_rate=0.002, tensorboard_log='results/RL', vf_coef = 0.5, lr_schedule = 'linear', ent_coef = 0.0)
+        elif self.args.model.upper() == "ACER":
+            from stable_baselines.common.policies import MlpPolicy
+            env = DummyVecEnv([make_env(i, 'multi-channel-DCA-v0', monitor_dir) for i in range(n_envs)])
+            # env = VecNormalize(env)
+            model = ACER(MlpPolicy, env=env, verbose=2, tensorboard_log='results/RL', ent_coef = 0.0, buffer_size = 100000)
         else:
+            print("something wrong")
             return
 
         model.learn(total_timesteps=200000000)
         model.save(self.log_dir + self.args.model.upper())
 
     def test(self):
-        model = PPO2.load(self.log_dir + "A2C_15_200m")
+        if self.args.model.upper() == "PPO":
+            model = PPO2.load(self.log_dir + "PPO.zip")
+        elif self.args.model.upper() == "DQN":
+            model = DQN.load(self.log_dir + "DQN.zip")
+        elif self.args.model.upper() == "A2C":
+            model = A2C.load(self.log_dir + "A2C.zip")
         env = gym.make('multi-channel-DCA-v0')
         count = 0
         total_reward = 0
@@ -88,12 +104,23 @@ class DCARunner:
             done = False
             state = env.reset()
             while not done:
-                action, _ = model.predict(state)
+                if self.args.model.upper() == "RANDOM":
+                    action = env.action_space.sample()
+                elif self.args.model.upper() == "DCA":
+                    state = np.reshape(state, (env.row, env.col, env.channels, env.status))
+                    channels_avaliablel_list = np.arange(env.channels)
+                    channels_avaliablel_list[:] = 0
+                    
+                    for i in range(env.channels):
+                        channels_avaliablel_list[i] = len(np.where(state[:,:,i,0] == 0)[0])
+                    action = np.where(channels_avaliablel_list == np.max(channels_avaliablel_list))[0][0]
+                else:
+                    action, _ = model.predict(state)
                 _, reward, done, info = env.step(action)
                 count+=1
                 total_reward += reward
                 if info['is_nexttime']:
-                    with open('results/a2c_15_200m_test.csv', 'a') as newFile:
+                    with open('results/DCA_test.csv', 'a') as newFile:
                         newFileWriter = csv.writer(newFile)
                         print(info)
                         newFileWriter.writerow([total_reward, info['temp_blockprob'], info['temp_total_blockprob'], info['timestamp']])

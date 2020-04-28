@@ -14,28 +14,40 @@ def parse_args():
 if __name__ == "__main__":
 
     args = parse_args()
-    if args.model == "ppo":
+    if args.model.upper() == "PPO":
         runner = DCARunner(args)
         if args.test:
             runner.test()
         else:
             runner.train()
-    elif args.model == "a2c":
+    elif args.model.upper() == "A2C":
         runner = DCARunner(args)
         if args.test:
             runner.test()
         else:
             runner.train()
-    elif args.model == "dqn":
+    elif args.model.upper() == "DQN":
+        runner = DCARunner(args)
+        if args.test:
+            runner.test()
+        else:
+            runner.train()
+    elif args.model.upper() == "ACER":
         runner = DCARunner(args)
         if args.test:
             runner.test()
         else:
             runner.train()
 
-    elif args.model == "random":
+    elif args.model.upper() == "RANDOM":
         runner = DCARunner(args)
         runner.test()
+
+    elif args.model.upper() == "DCA":
+        runner = DCARunner(args)
+        runner.test()  
+    else:
+        print("something wrong")
 
 
 

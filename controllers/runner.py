@@ -70,11 +70,11 @@ class DCARunner:
             model = DQN(MlpPolicy, env=env, verbose=1, tensorboard_log='results/RL', prioritized_replay=True, buffer_size=20000)
         elif self.args.model.upper() == "PPO":
             from stable_baselines.common.policies import MlpPolicy, CnnPolicy
-            n_envs = 16
+            n_envs = 12
             # env = DummyVecEnv([make_env(i, 'multi-channel-DCA-v0', monitor_dir) for i in range(n_envs)])
             env = make_vec_env('multi-channel-DCA-v0', n_envs=n_envs)
             # env = VecNormalize(env)
-            env = VecFrameStack(env, n_stack=2)
+            env = VecFrameStack(env, n_stack=3)
             model = PPO2(CustomPolicy, env=env, n_steps=2048, nminibatches=32, lam=0.95, gamma=0.99, noptepochs=10, ent_coef=0.0,
                 learning_rate=2.5e-4, cliprange=0.2, verbose=2, tensorboard_log='results/RL')
         elif self.args.model.upper() == "A2C":
@@ -126,7 +126,7 @@ class DCARunner:
                 count+=1
                 total_reward += reward
                 if info['is_nexttime']:
-                    f = open("results/" + self.args.model.upper() + "/result_mlp.csv","a+")
+                    f = open("results/" + self.args.model.upper() + "/result_3.csv","a+")
                     newFileWriter = csv.writer(f)
                     print(info)
                     newFileWriter.writerow([total_reward, info['temp_blockprob'], info['temp_total_blockprob'], info['drop_rate'], info['timestamp']])

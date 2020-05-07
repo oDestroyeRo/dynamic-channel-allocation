@@ -46,7 +46,7 @@ class MultiChannelDCAEnv(gym.Env):
         self.timestamp = self.traffic_data[ self.traffic_timestep, 0, 0, 0]
         self.queue = 0
         self.action_space = spaces.Discrete(self.channels)
-        self.observation_space = spaces.Box(low=0, high=self.channels, shape=(self.row *self.col *self.channels *self.status,), dtype=np.uint64)
+        self.observation_space = spaces.Box(low=0, high=self.channels, shape=(self.row ,self.col ,self.channels *self.status,), dtype=np.uint64)
 
         self.viewer = None
         self.seed()
@@ -171,39 +171,6 @@ class MultiChannelDCAEnv(gym.Env):
         
 
 
-
-
-        # self.current_base_station[1] += 1
-        # if self.current_base_station[1] >= self.col:
-        #     self.current_base_station[0] += 1
-        #     if (self.current_base_station[0] >= self.row and self.current_base_station[1] >= self.col):
-        #         # self.done = True
-        #         self.traffic_timestep += 1
-        #         if self.traffic_timestep >= self.traffic_data.shape[0]:
-        #             self.reward = 0
-        #             self.done = True
-        #         else:
-        #             self.set_timestamp()
-        #             state = np.zeros([self.row, self.col, self.channels, self.status], dtype=np.uint32)
-        #             for i in range(self.row):
-        #                 for j in range(self.col):
-        #                     # state[i, j, :, 0] = self.channels+1
-        #                     state[i, j, :, 2] = math.ceil(self.traffic_data[ self.traffic_timestep, i, j, 1] / self.traffic_channel)
-        #         if self.traffic_timestep - self.temp_timestep >= 6:
-        #             self.done = True
-        #     self.current_base_station[1] = 0
-        #     if self.current_base_station[0] >= self.row:
-        #         self.current_base_station[0] = 0
-        # # state[self.current_base_station[0], self.current_base_station[1], :, 2] = math.ceil(self.traffic_data[ self.traffic_timestep, self.current_base_station[0], self.current_base_station[1], 1] / self.traffic_channel)
-        # state[self.current_base_station[0], self.current_base_station[1], self.queue, 1] = self.channels + 1
-        # state[self.current_base_station[0], self.current_base_station[1], :, 0] = 0
-        # return state
-
-    # def next_channel(self, state):
-    #     state[self.current_base_station[0], self.current_base_station[1], self.queue-1, 1] = 0
-    #     state[self.current_base_station[0], self.current_base_station[1], self.queue, 1] = self.channels + 1
-    #     return state
-
     def step(self, action):
         action = action + 1
         # print(self.current_base_station)
@@ -257,7 +224,8 @@ class MultiChannelDCAEnv(gym.Env):
         return np.reshape(self.state, self.observation_space.shape), self.reward, self.done, {'timestamp' : self.get_timestamp(), 'is_nexttime' : self.is_nexttime, 'temp_blockprob' : self.temp_blockprob, 'temp_total_blockprob' : self.temp_total_blockprob, 'drop_rate' : self.temp_drop_rate}
 
     def get_timestamp(self):
-        return str(datetime.fromtimestamp(self.timestamp, la).strftime('%Y-%m-%d %H:%M:%S'))
+        return datetime.fromtimestamp(self.timestamp, la).ctime()
+        # return str(datetime.fromtimestamp(self.timestamp, la).strftime('%Y-%m-%d %H:%M:%S'))
 
     def get_blockprob(self):
         return self.blocktimes/self.timestep
@@ -272,6 +240,8 @@ class MultiChannelDCAEnv(gym.Env):
         self.timestamp = self.traffic_data[ self.traffic_timestep, 0, 0, 0]
 
     def reset(self):
+        self.drop_times = 0
+        self.temp_drop_rate = 0
         self.temp_blockprob = 0
         self.temp_total_blockprob = 0
         self.is_nexttime = False

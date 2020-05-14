@@ -56,7 +56,7 @@ class DCARunner:
                 # Create the monitor folder if needed
                 if monitor_path is not None:
                     os.makedirs(monitor_dir, exist_ok=True)
-                env = Monitor(env, filename=monitor_path, allow_early_resets=True, info_keywords=('temp_blockprob','temp_total_blockprob','timestamp',))
+                env = Monitor(env, filename=monitor_path, allow_early_resets=True, info_keywords=('temp_blockprob','temp_total_blockprob', 'drop_rate','timestamp',))
                 # Optionally, wrap the environment with the provided wrapper
                 return env
             return _init
@@ -70,13 +70,13 @@ class DCARunner:
             model = DQN(MlpPolicy, env=env, verbose=1, tensorboard_log='results/RL', prioritized_replay=True, buffer_size=20000)
         elif self.args.model.upper() == "PPO":
             from stable_baselines.common.policies import MlpPolicy, CnnPolicy
-            n_envs = 12
-            # env = DummyVecEnv([make_env(i, 'multi-channel-DCA-v0', monitor_dir) for i in range(n_envs)])
-            env = make_vec_env('multi-channel-DCA-v0', n_envs=n_envs)
+            n_envs = 16
+            env = DummyVecEnv([make_env(i, 'multi-channel-DCA-v0', monitor_dir) for i in range(n_envs)])
+            # env = make_vec_env('multi-channel-DCA-v0', n_envs=n_envs)
             # env = VecNormalize(env)
-            env = VecFrameStack(env, n_stack=3)
-            model = PPO2(CustomPolicy, env=env, n_steps=2048, nminibatches=32, lam=0.95, gamma=0.99, noptepochs=10, ent_coef=0.0,
-                learning_rate=2.5e-4, cliprange=0.2, verbose=2, tensorboard_log='results/RL')
+            # env = VecFrameStack(env, n_stack=3)
+            model = PPO2(CustomPolicy, env=env, n_steps=1024, nminibatches=32, lam=0.95, gamma=0.99, noptepochs=10, ent_coef=0.0,
+                learning_rate=3e-4, cliprange=0.2, verbose=2, tensorboard_log='results/RL')
         elif self.args.model.upper() == "A2C":
             from stable_baselines.common.policies import MlpPolicy
             n_envs = 8

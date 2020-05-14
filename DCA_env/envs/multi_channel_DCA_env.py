@@ -27,8 +27,11 @@ class MultiChannelDCAEnv(gym.Env):
         self.row = 12
         self.col = 12
 
+
+        self.feature = [0, 255, 85 , 170] 
+        # 0 = available and no Current request,  255 = If assigned and Current request. 85 = available and no Current request, 170 = available and no Current request
         self.channels = 15
-        self.status = 2 #channel available //location
+        # self.status = 2 #channel available //location
         self.current_base_station = [0,0]
         self.reward = 0
         self.timestep = 1
@@ -41,7 +44,7 @@ class MultiChannelDCAEnv(gym.Env):
         self.timestamp = self.traffic_data[ self.traffic_timestep, 0, 0, 0]
         self.queue = 0
         self.action_space = spaces.Discrete(self.channels)
-        self.observation_space = spaces.Box(low=0, high=255, shape=(self.row ,self.col ,self.channels *self.status,), dtype=np.uint64)
+        self.observation_space = spaces.Box(low=0, high=255, shape=(self.row ,self.col ,self.channels,), dtype=np.uint64)
 
         self.viewer = None
         self.seed()
@@ -68,12 +71,12 @@ class MultiChannelDCAEnv(gym.Env):
         for i in range(len(neighbor)):
             row = i // 12
             col = i % 12
-            if action in state[row, col, :, 0]:
+            if state[row, col, action] == 170 or state[row, col, action] == 255:
                 return False
         return True
 
     def is_channel_avalable(self, state):
-        used_channel = set([])
+        used_channel = 0
         cur_index = (self.current_base_station[0] * self.row) + (self.current_base_station[1] % self.col)
         if cur_index >= 143:
             cur_index = 142
@@ -81,8 +84,12 @@ class MultiChannelDCAEnv(gym.Env):
         for i in range(len(neighbor)):
             row = i // 12
             col = i % 12
-            used_channel.update(set(state[row, col, :, 0]))
-        if len(used_channel) >= self.channels:
+            unique, counts = np.unique(state[row,col,:], return_counts=True)
+            channels_dict = dict(zip(unique, counts))
+            if 255 in channels_dict:
+                used_channel += channels_dict[255]
+
+        if used_channel >= self.channels:
             return False
         return True
 
@@ -90,18 +97,18 @@ class MultiChannelDCAEnv(gym.Env):
 
     def next_request(self, state):
         self.is_nexttime = False
-        self.status_array[self.current_base_station[0], self.current_base_station[1], 0] -= 500
+        self.traffic_data[self.traffic_timestep, self.current_base_station[0], self.current_base_station[1], 1] -= 500
 
-        if self.status_array[self.current_base_station[0], self.current_base_station[1], 0] < 0:
-            self.status_array[self.current_base_station[0], self.current_base_station[1], 0] = 0
-        state[self.current_base_station[0], self.current_base_station[1], :, 1] = 0
-        queue = int(self.status_array[self.current_base_station[0], self.current_base_station[1], 1])
+        if self.traffic_data[self.traffic_timestep, self.current_base_station[0], self.current_base_station[1], 1] < 0:
+            self.traffic_data[self.traffic_timestep, self.current_base_station[0], self.current_base_station[1], 1] = 0
+        # state[self.current_base_station[0], self.current_base_station[1], :, 1] = 0
+        # queue = int(self.status_array[self.current_base_station[0], self.current_base_station[1], 1])
 
-        if int(self.status_array[self.current_base_station[0], self.current_base_station[1], 0]) <= 0 or queue >= self.channels:
+        if int(self.traffic_data[self.traffic_timestep, self.current_base_station[0], self.current_base_station[1], 1]) <= 0:
             cur_index = (self.current_base_station[0] * self.row) + (self.current_base_station[1] % self.col)
-            self.drop_times += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 500
-            self.total_blocktimes += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 500
-            self.total_timestep += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 500
+            self.drop_times += self.traffic_data[self.traffic_timestep, self.current_base_station[0], self.current_base_station[1], 1] // 500
+            self.total_blocktimes += self.traffic_data[self.traffic_timestep, self.current_base_station[0], self.current_base_station[1], 1] // 500
+            self.total_timestep += self.traffic_data[self.traffic_timestep, self.current_base_station[0], self.current_base_station[1], 1] // 500
             self.bs_available.remove(cur_index)
         if len(self.bs_available) > 0:
             random_index = np.random.randint(len(self.bs_available))
@@ -109,13 +116,12 @@ class MultiChannelDCAEnv(gym.Env):
             self.current_base_station[0] = bs_random_index // self.row
             self.current_base_station[1] = bs_random_index % self.col
             while not self.is_channel_avalable(state):
-            #     # print(self.current_base_station)
                 # self.blocktimes += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 250
                 # self.timestep += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 250
-                self.drop_times += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 500
-                self.total_blocktimes += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 500
-                self.total_timestep += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 500
-                self.status_array[self.current_base_station[0], self.current_base_station[1], 0] = 0
+                self.drop_times += self.traffic_data[self.traffic_timestep, self.current_base_station[0], self.current_base_station[1], 1] // 500
+                self.total_blocktimes += self.traffic_data[self.traffic_timestep, self.current_base_station[0], self.current_base_station[1], 1] // 500
+                self.total_timestep += self.traffic_data[self.traffic_timestep, self.current_base_station[0], self.current_base_station[1], 1] // 500
+                self.traffic_data[self.traffic_timestep, self.current_base_station[0], self.current_base_station[1], 1] = 0
             #     # cur_index = (self.current_base_station[0] * self.row) + (self.current_base_station[1] % self.col)
                 self.bs_available.remove(bs_random_index)
                 if (len(self.bs_available) <= 0):
@@ -141,36 +147,43 @@ class MultiChannelDCAEnv(gym.Env):
             if self.traffic_timestep - self.temp_timestep >= 1:
                 self.done = True
             self.set_timestamp()
-            state = np.zeros([self.row, self.col, self.channels, self.status], dtype=np.uint64)
+            state = np.zeros([self.row, self.col, self.channels], dtype=np.uint64)
             
-            self.status_array = np.zeros((self.row,self.col,2))
-            for i in range(self.row):
-                for j in range(self.col):
-                    self.status_array[i,j,0] = self.traffic_data[self.traffic_timestep, i, j, 1]
+            # self.status_array = np.zeros((self.row,self.col))
+            # for i in range(self.row):
+            #     for j in range(self.col):
+            #         self.status_array[i,j] = self.traffic_data[self.traffic_timestep, i, j, 1]
             self.bs_available = []
             for i in range(144):
                 self.bs_available.append(i)
-        queue = int(self.status_array[self.current_base_station[0], self.current_base_station[1], 1])
-        state[self.current_base_station[0], self.current_base_station[1], queue, 1] = self.channels
+        # queue = int(self.status_array[self.current_base_station[0], self.current_base_station[1], 1])
 
+        for i in range(self.channels):
+            if state[self.current_base_station[0], self.current_base_station[1], i] == 0:
+                state[self.current_base_station[0], self.current_base_station[1], i] = 85
+            elif state[self.current_base_station[0], self.current_base_station[1], i] == 255:
+                state[self.current_base_station[0], self.current_base_station[1], i] = 170
         return state
         
 
 
     def step(self, action):
-        action = action + 1
+        # action = action
         # print(self.current_base_station)
         self.done = False
         state = self.state
+        # temp = [self.current_base_station[0], self.current_base_station[1]]
+        for i in range(self.channels):
+            if state[self.current_base_station[0], self.current_base_station[1], i] == 85:
+                state[self.current_base_station[0], self.current_base_station[1], i] = 0
+            elif state[self.current_base_station[0], self.current_base_station[1], i] == 170:
+                state[self.current_base_station[0], self.current_base_station[1], i] = 255
         if self.check_dca_real_bs(action, state):
             self.reward = 1
-            queue = int(self.status_array[self.current_base_station[0], self.current_base_station[1], 1])
-            
-            state[self.current_base_station[0], self.current_base_station[1], queue, 0] = action
-            self.status_array[self.current_base_station[0], self.current_base_station[1], 1] += 1
+            # queue = int(self.status_array[self.current_base_station[0], self.current_base_station[1], 1])
+            state[self.current_base_station[0], self.current_base_station[1], action] = 255
             state = self.next_request(state)
         else:
-            self.status_array[self.current_base_station[0], self.current_base_station[1], 1] += 1
             self.blocktimes += 1
             self.total_blocktimes += 1
             self.reward = -1
@@ -178,6 +191,8 @@ class MultiChannelDCAEnv(gym.Env):
         self.state = state
         self.timestep +=1
         self.total_timestep +=1
+        # print("current = ", temp[0], temp[1], state[temp[0], temp[1], :])
+        # print("next = ", self.current_base_station[0], self.current_base_station[1], state[self.current_base_station[0], self.current_base_station[1], :])
         return np.reshape(self.state, self.observation_space.shape), self.reward, self.done, {'timestamp' : self.get_timestamp(), 'is_nexttime' : self.is_nexttime, 'temp_blockprob' : self.temp_blockprob, 'temp_total_blockprob' : self.temp_total_blockprob, 'drop_rate' : self.temp_drop_rate}
 
     def get_timestamp(self):
@@ -206,22 +221,24 @@ class MultiChannelDCAEnv(gym.Env):
         self.total_timestep = 1
         self.total_blocktimes = 0
         self.current_base_station = [0,0]
-        state = np.zeros([self.row, self.col, self.channels, self.status], dtype=np.uint64)
+        state = np.zeros([self.row, self.col, self.channels], dtype=np.uint64)
         if self.traffic_timestep >= 8630: #8630
             self.traffic_timestep = 0
         self.temp_timestep = self.traffic_timestep
-    
-        self.status_array = np.zeros((self.row,self.col,2))
-        for i in range(self.row):
-            for j in range(self.col):
-                self.status_array[i,j,0] = self.traffic_data[self.traffic_timestep, i, j, 1]
+        self.status_array = np.zeros((self.row,self.col))
+        # for i in range(self.row):
+        #     for j in range(self.col):
+        #         self.status_array[i,j] = self.traffic_data[self.traffic_timestep, i, j, 1]
         self.bs_available = []
         for i in range(144):
             self.bs_available.append(i)
+
+
         random_index = np.random.randint(len(self.bs_available))
         bs_random_index = self.bs_available[random_index]
         self.current_base_station[0] = bs_random_index // self.row
         self.current_base_station[1] = bs_random_index % self.col
+        state[self.current_base_station[0], self.current_base_station[1], :] = 85
         self.state = state
         return np.reshape(self.state, self.observation_space.shape)
 

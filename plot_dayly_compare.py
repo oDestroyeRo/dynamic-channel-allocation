@@ -7,29 +7,61 @@ datas_ppo = pd.read_csv('results/PPO/result_mlp.csv', names=["reward", "blockpro
 
 datas_ppo_CNN = pd.read_csv('results/PPO/result_2.csv', names=["reward", "blockprob", "total_blockprob", "drop_rate", "Date"])
 
-renew_PPO = {}
+blockprob_ppo = {}
+total_blockprob_ppo = {}
+droprate_ppo = {}
+blockprob_ppo_cnn = {}
+total_blockprob_ppo_cnn = {}
+droprate_ppo_cnn = {}
+
+count = 0
 for index, row in datas_ppo.iterrows():
     split_data = row['Date'].split(' ')
     day = split_data[0]
     split_time = split_data[-2].split(':')
     time = split_time[0]
-    if day=="Sun":
-        renew_PPO[day, time] = [row['blockprob'], row['total_blockprob'], row['drop_rate']]
-    if day=="Mon":
-        renew_PPO[day, time] = [row['blockprob'], row['total_blockprob'], row['drop_rate']]
-    if day=="Tue":
-        renew_PPO[day, time] = [row['blockprob'], row['total_blockprob'], row['drop_rate']]
-    if day=="Wed":
-        renew_PPO[day, time] = [row['blockprob'], row['total_blockprob'], row['drop_rate']]
-    if day=="Thu":
-        renew_PPO[day, time] = [row['blockprob'], row['total_blockprob'], row['drop_rate']]
-    if day=="Fri":
-        renew_PPO[day, time] = [row['blockprob'], row['total_blockprob'], row['drop_rate']]
-    if day=="Sat":
-        renew_PPO[day, time] = [row['blockprob'], row['total_blockprob'], row['drop_rate']]
+    if (day, time) in blockprob_ppo:
+        blockprob_ppo[day, time] += row['blockprob']
+        total_blockprob_ppo[day, time] += row['total_blockprob']
+        droprate_ppo[day, time] += row['drop_rate']
+    else:
+        blockprob_ppo[day, time] = row['blockprob']
+        total_blockprob_ppo[day, time] = row['total_blockprob']
+        droprate_ppo[day, time] = row['drop_rate']
+    count += 1
 
-print(renew_PPO)
+blockprob_ppo[day, time] = blockprob_ppo[day, time]/count
+total_blockprob_ppo[day, time] = total_blockprob_ppo[day, time]/count
+droprate_ppo[day, time] = droprate_ppo[day, time]/count
+
+print(blockprob_ppo)
+print(total_blockprob_ppo)
+print(droprate_ppo)
 # renew_PPO = 
+
+count = 0
+for index, row in datas_ppo_CNN.iterrows():
+    split_data = row['Date'].split(' ')
+    day = split_data[0]
+    split_time = split_data[-2].split(':')
+    time = split_time[0]
+    if (day, time) in datas_ppo_CNN:
+        blockprob_ppo_cnn[day, time] += row['blockprob']
+        total_blockprob_ppo_cnn[day, time] += row['total_blockprob']
+        droprate_ppo_cnn[day, time] += row['drop_rate']
+    else:
+        blockprob_ppo_cnn[day, time] = row['blockprob']
+        total_blockprob_ppo_cnn[day, time] = row['total_blockprob']
+        droprate_ppo_cnn[day, time] = row['drop_rate']
+    count += 1
+
+blockprob_ppo_cnn[day, time] = blockprob_ppo_cnn[day, time]/count
+total_blockprob_ppo_cnn[day, time] = total_blockprob_ppo_cnn[day, time]/count
+droprate_ppo_cnn[day, time] = droprate_ppo_cnn[day, time]/count
+
+print(blockprob_ppo_cnn)
+print(total_blockprob_ppo_cnn)
+print(droprate_ppo_cnn)
 
 
 

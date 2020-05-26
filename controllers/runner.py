@@ -79,10 +79,10 @@ class DCARunner:
                 learning_rate=2.5e-4, cliprange=0.2, verbose=2, tensorboard_log='results/RL')
         elif self.args.model.upper() == "A2C":
             from stable_baselines.common.policies import MlpPolicy
-            n_envs = 8
+            n_envs = 12
             env = DummyVecEnv([make_env(i, 'multi-channel-DCA-v0', monitor_dir) for i in range(n_envs)])
             # env = VecNormalize(env)
-            model = A2C(MlpPolicy, env=env, n_steps=32, verbose=2, learning_rate=0.002, tensorboard_log='results/RL', vf_coef = 0.5, lr_schedule = 'linear', ent_coef = 0.0)
+            model = A2C(CustomPolicy, env=env, n_steps=32, verbose=2, learning_rate=0.002, tensorboard_log='results/RL', vf_coef = 0.5, lr_schedule = 'linear', ent_coef = 0.0)
         elif self.args.model.upper() == "ACER":
             from stable_baselines.common.policies import MlpPolicy
             env = DummyVecEnv([make_env(i, 'multi-channel-DCA-v0', monitor_dir) for i in range(n_envs)])

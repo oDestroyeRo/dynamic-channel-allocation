@@ -7,6 +7,6 @@ datas = pd.read_csv('Milano_bs.csv')
 
 plt.scatter(x=datas['lon'].astype(float), y=datas['lat'].astype(float))
 
-plt.savefig("results/bs")
+plt.savefig("results/bs.eps", format="eps")
 
 plt.clf()

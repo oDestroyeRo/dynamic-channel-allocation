@@ -41,7 +41,7 @@ class MultiChannelDCAEnv(gym.Env):
         self.timestamp = self.traffic_data[ self.traffic_timestep, 0, 0, 0]
         self.queue = 0
         self.action_space = spaces.Discrete(self.channels)
-        self.observation_space = spaces.Box(low=0, high=255, shape=(self.row ,self.col ,self.channels *self.status,), dtype=np.uint64)
+        self.observation_space = spaces.Box(low=0, high=self.channels, shape=(self.row ,self.col ,self.channels *self.status,), dtype=np.uint64)
 
         self.viewer = None
         self.seed()

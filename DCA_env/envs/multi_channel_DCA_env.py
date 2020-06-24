@@ -10,6 +10,7 @@ import pytz
 import matplotlib.pyplot as plt
 import pandas as pd
 import random
+import collections
 
 la = timezone("CET")
 
@@ -26,9 +27,9 @@ class MultiChannelDCAEnv(gym.Env):
         self.traffic_data = np.load("mobile_traffic/npy_merge/merge_traffic.npy")
         self.row = 12
         self.col = 12
-
-        self.channels = 15
-        self.status = 2 #channel available //location
+        self.divine = 500
+        self.channels = 30
+        self.status = 3 #channel available //location
         self.current_base_station = [0,0]
         self.reward = 0
         self.timestep = 1
@@ -90,7 +91,7 @@ class MultiChannelDCAEnv(gym.Env):
 
     def next_request(self, state):
         self.is_nexttime = False
-        self.status_array[self.current_base_station[0], self.current_base_station[1], 0] -= 500
+        self.status_array[self.current_base_station[0], self.current_base_station[1], 0] -= self.divine
 
         if self.status_array[self.current_base_station[0], self.current_base_station[1], 0] < 0:
             self.status_array[self.current_base_station[0], self.current_base_station[1], 0] = 0
@@ -99,9 +100,9 @@ class MultiChannelDCAEnv(gym.Env):
 
         if int(self.status_array[self.current_base_station[0], self.current_base_station[1], 0]) <= 0 or queue >= self.channels:
             cur_index = (self.current_base_station[0] * self.row) + (self.current_base_station[1] % self.col)
-            self.drop_times += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 500
-            self.total_blocktimes += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 500
-            self.total_timestep += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 500
+            self.drop_times += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // self.divine
+            self.total_blocktimes += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // self.divine
+            self.total_timestep += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // self.divine
             self.bs_available.remove(cur_index)
         if len(self.bs_available) > 0:
             random_index = np.random.randint(len(self.bs_available))
@@ -112,9 +113,9 @@ class MultiChannelDCAEnv(gym.Env):
             #     # print(self.current_base_station)
                 # self.blocktimes += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 250
                 # self.timestep += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 250
-                self.drop_times += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 500
-                self.total_blocktimes += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 500
-                self.total_timestep += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // 500
+                self.drop_times += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // self.divine
+                self.total_blocktimes += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // self.divine
+                self.total_timestep += self.status_array[self.current_base_station[0], self.current_base_station[1], 0] // self.divine
                 self.status_array[self.current_base_station[0], self.current_base_station[1], 0] = 0
             #     # cur_index = (self.current_base_station[0] * self.row) + (self.current_base_station[1] % self.col)
                 self.bs_available.remove(bs_random_index)
@@ -147,12 +148,9 @@ class MultiChannelDCAEnv(gym.Env):
             for i in range(self.row):
                 for j in range(self.col):
                     self.status_array[i,j,0] = self.traffic_data[self.traffic_timestep, i, j, 1]
-            self.bs_available = []
-            for i in range(144):
-                self.bs_available.append(i)
+            self.bs_available = self.bs_available_temp
         queue = int(self.status_array[self.current_base_station[0], self.current_base_station[1], 1])
         state[self.current_base_station[0], self.current_base_station[1], queue, 1] = self.channels
-
         return state
         
 
@@ -178,6 +176,10 @@ class MultiChannelDCAEnv(gym.Env):
         self.state = state
         self.timestep +=1
         self.total_timestep +=1
+        # re_s = np.reshape(self.state[:,:,:,0], (12*12*15,))
+        # counterChannel = collections.Counter(re_s)
+        # channelUtil = (len(re_s) - counterChannel.get(0)) / len(re_s)
+        # return np.reshape(self.state, self.observation_space.shape), self.reward, self.done, {'timestamp' : self.get_timestamp(), 'is_nexttime' : self.is_nexttime, 'temp_blockprob' : self.temp_blockprob, 'temp_total_blockprob' : self.temp_total_blockprob, 'drop_rate' : self.temp_drop_rate, 'utilization' : channelUtil}
         return np.reshape(self.state, self.observation_space.shape), self.reward, self.done, {'timestamp' : self.get_timestamp(), 'is_nexttime' : self.is_nexttime, 'temp_blockprob' : self.temp_blockprob, 'temp_total_blockprob' : self.temp_total_blockprob, 'drop_rate' : self.temp_drop_rate}
 
     def get_timestamp(self):
@@ -214,14 +216,26 @@ class MultiChannelDCAEnv(gym.Env):
         self.status_array = np.zeros((self.row,self.col,2))
         for i in range(self.row):
             for j in range(self.col):
+
                 self.status_array[i,j,0] = self.traffic_data[self.traffic_timestep, i, j, 1]
+                request = self.status_array[i,j,0]//self.divine
+                if request <= self.channels//4:
+                    state[i,j,:,2] = 0
+                elif request > self.channels//4 and request < self.channels//2 + self.channels//4:
+                    state[i,j,:,2] = self.channels//2
+                else:
+                    state[i,j,:,2] = self.channels
         self.bs_available = []
+        array_bs_available = []
         for i in range(144):
-            self.bs_available.append(i)
+           array_bs_available.append(i)
+        self.bs_available_temp = array_bs_available
+        self.bs_available = array_bs_available
         random_index = np.random.randint(len(self.bs_available))
         bs_random_index = self.bs_available[random_index]
         self.current_base_station[0] = bs_random_index // self.row
         self.current_base_station[1] = bs_random_index % self.col
+
         self.state = state
         return np.reshape(self.state, self.observation_space.shape)
 

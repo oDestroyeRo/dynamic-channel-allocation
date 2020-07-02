@@ -1,2 +1,1 @@
 from envs.multi_channel_DCA_env import MultiChannelDCAEnv
-from envs.single_channel_DCA_env import SingleChannelDCAEnv
